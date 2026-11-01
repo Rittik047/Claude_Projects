@@ -58,12 +58,14 @@ def _ptbxl(cfg: Config) -> str:
         leak = "none (checked)"
     except Exception as e:  # noqa: BLE001
         leak = f"**LEAKAGE: {e}**"
-    lz = sum(1 for d in meta.scp_codes for v in d.values() if v == 0)
+    scp = load_scp(root)
+    diag_codes = set(scp.index[scp["diagnostic"] == 1])
+    lz = sum(1 for d in meta.scp_codes for k, v in d.items() if v == 0 and k in diag_codes)
     rows = [
         ("records", len(meta)),
         ("patients", meta.patient_id.nunique()),
         ("no superclass label (excluded)", int((~meta.has_label).sum())),
-        ("SCP codes with likelihood 0 (still counted, benchmark convention)", lz),
+        ("diagnostic SCP codes with likelihood 0 (still counted, benchmark convention)", lz),
         ("age coded 300 (de-identified >89)", int((meta.age >= 300).sum())),
         ("pacemaker flag", int(meta.pacemaker.notna().sum())),
         ("patient leakage across splits", leak),

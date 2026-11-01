@@ -67,3 +67,12 @@ def test_audit_counts(fixture_cfg):
     assert "| records | 6 |" in txt and "| patients | 5 |" in txt
     assert "| no superclass label (excluded) | 1 |" in txt
     assert "flat_lead" in txt and "IMI" in txt
+
+
+def test_likelihood_zero_counts_diagnostic_codes_only(fixture_cfg):
+    # fixture: NDT:0 is the only diagnostic code with likelihood 0 (SR:0, LVOLT:0 are not)
+    txt = run_audit(fixture_cfg).read_text()
+    assert (
+        "| diagnostic SCP codes with likelihood 0 (still counted, benchmark convention) | 1 |"
+        in txt
+    )
