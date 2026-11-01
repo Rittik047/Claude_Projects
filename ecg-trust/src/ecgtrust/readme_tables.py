@@ -32,7 +32,8 @@ def render_headline_table(reports_dir: Path) -> str:
 
         lines.append(
             f"| {label} | {m['n']} | {a['point']:.3f} [{a['lo']:.3f}, {a['hi']:.3f}] | "
-            f"{c['macro_ece_pre']:.3f} → {c['macro_ece_post']:.3f} | {mean(cf['refer_rate']):.1%} | "
+            f"{c['macro_ece_pre']:.3f} → {c['macro_ece_post']:.3f} | "
+            f"{mean(cf['refer_rate']):.1%} | "
             f"{mean(cf['cov_pos']):.3f} / {mean(cf['cov_neg']):.3f} |"
         )
     return "\n".join(lines)
