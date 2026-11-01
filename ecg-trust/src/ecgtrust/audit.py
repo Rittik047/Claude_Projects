@@ -182,6 +182,48 @@ def _baseline(cfg: Config) -> str:
     )
 
 
+def data_summary(cfg: Config) -> dict:
+    """Machine-readable counts used by the guide and README."""
+    root = cfg.dataset_dir("ptbxl")
+    meta = load_metadata(root)
+    y = superclass_labels(meta, load_scp(root))
+    splits = make_splits(meta)
+    out = {
+        "ptbxl": {
+            "records": len(meta),
+            "patients": int(meta.patient_id.nunique()),
+            "unlabelled": int((~meta.has_label).sum()),
+            "split_records": {s: int((splits == s).sum()) for s in SPLITS},
+            "prevalence": {
+                s: {c: float(y.loc[splits == s, c].mean()) for c in CLASSES} for s in SPLITS
+            },
+            "validated_by_human": {
+                int(k): float(v)
+                for k, v in meta.groupby("strat_fold").validated_by_human.mean().items()
+            },
+        }
+    }
+    p = cfg.artifacts / "external_meta.parquet"
+    if p.exists():
+        m = pd.read_parquet(p)
+        if "has_label" not in m:
+            m["has_label"] = m[list(CLASSES)].any(axis=1)
+        ok = m[m.excluded_reason == ""]
+        ev = ok[ok.has_label]
+        ext = {
+            "records": len(m),
+            "signal_ok": len(ok),
+            "evaluated": len(ev),
+            "prevalence_strict": {c: float(ev[c].mean()) for c in CLASSES},
+        }
+        if "has_label_liberal" in m:
+            evl = ok[ok.has_label_liberal]
+            ext["evaluated_liberal"] = len(evl)
+            ext["prevalence_liberal"] = {c: float(evl[c + "_liberal"].mean()) for c in CLASSES}
+        out["external"] = ext
+    return out
+
+
 def run_audit(cfg: Config) -> Path:
     out = cfg.reports / "data_audit.md"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -194,6 +236,7 @@ def run_audit(cfg: Config) -> Path:
         _baseline(cfg),
     ]
     out.write_text("\n\n".join(parts) + "\n")
+    (cfg.reports / "data_summary.json").write_text(json.dumps(data_summary(cfg), indent=2))
     return out
 
 

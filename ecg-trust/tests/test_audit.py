@@ -87,3 +87,11 @@ def test_audit_reports_external_label_availability(fixture_cfg):
     assert "| signal OK but no superclass (excluded, as in PTB-XL) | 1 |" in txt
     assert "| evaluated (signal OK and labelled) | 1 |" in txt
     assert "### Sensitivity: liberal label map" in txt
+
+
+def test_audit_writes_machine_readable_summary(fixture_cfg):
+    run_audit(fixture_cfg)
+    s = json.loads((fixture_cfg.reports / "data_summary.json").read_text())
+    assert s["ptbxl"]["records"] == 6 and s["ptbxl"]["patients"] == 5
+    assert set(s["ptbxl"]["prevalence"]) == {"train", "val_select", "val_calib", "test"}
+    assert s["external"]["evaluated"] == 1 and "NORM" in s["external"]["prevalence_strict"]
