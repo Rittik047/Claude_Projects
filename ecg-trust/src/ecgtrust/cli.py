@@ -6,7 +6,9 @@ import argparse
 import importlib
 
 # Modules that expose `register(subparsers)`; added as tasks land.
-COMMAND_MODULES: list[str] = []
+COMMAND_MODULES: list[str] = [
+    "ecgtrust.data.download",
+]
 
 
 def build_parser() -> argparse.ArgumentParser:
