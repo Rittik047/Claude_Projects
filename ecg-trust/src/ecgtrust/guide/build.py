@@ -106,7 +106,8 @@ def collect(cfg: Config) -> dict:
                 r["n_pos"],
                 f"{r['auroc']:.3f} [{r['lo']:.3f}, {r['hi']:.3f}]",
                 f"{test['discrimination']['auprc'][i]:.3f}",
-                f"{test['calibration']['ece_pre'][i]:.3f} → {test['calibration']['ece_post'][i]:.3f}",
+                f"{test['calibration']['ece_pre'][i]:.3f} → "
+                f"{test['calibration']['ece_post'][i]:.3f}",
             )
             for i, r in enumerate(test["discrimination"]["per_class"])
         ]
