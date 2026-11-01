@@ -30,7 +30,24 @@ from ecgtrust.evaluate.subgroups import DEFAULT_COLUMNS, subgroup_table
 from ecgtrust.freeze import freeze_hash, log_test_run, require_freeze
 from ecgtrust.models.ensemble import checkpoint_paths, ensemble_proba, load_preds, save_preds
 
-EXTRA_ANALYSES: list = []  # (name, fn(cfg, split, ctx) -> dict) registered by later modules
+EXTRA_MODULES = (
+    "ecgtrust.robustness.run",
+    "ecgtrust.robustness.occlusion",
+    "ecgtrust.evaluate.comparator",
+)
+
+
+def extra_analyses() -> list:
+    """(name, fn(cfg, split, ctx)) from modules exposing ANALYSIS; missing modules are skipped."""
+    import importlib
+
+    out = []
+    for mod in EXTRA_MODULES:
+        try:
+            out.append(importlib.import_module(mod).ANALYSIS)
+        except ModuleNotFoundError:
+            continue
+    return out
 
 
 def _clean(o):
@@ -208,8 +225,9 @@ def evaluate_split(
         "groups": groups,
         "decisions": decide(p_post, thr[str(max(cfg.alphas))]),
     }
-    for name, fn in EXTRA_ANALYSES:
-        res[name] = fn(cfg, split, ctx)
+    have_ckpts = all(p.exists() for p in checkpoint_paths(cfg))
+    for name, fn in extra_analyses():
+        res[name] = fn(cfg, split, ctx) if have_ckpts else {"skipped": "no checkpoints"}
     aucs = [r["auroc"] for r in res["discrimination"]["per_class"]]
     plots.roc_plot(y, p_post, aucs, out_dir / "roc.png", f"ROC — {split}")
     plots.reliability_plot(
