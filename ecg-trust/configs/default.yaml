@@ -21,4 +21,4 @@ train:
   lr: 1.0e-3
   weight_decay: 1.0e-2
   max_epochs: 30
-  patience: 5
+  patience: 30
