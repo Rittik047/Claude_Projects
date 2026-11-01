@@ -9,6 +9,7 @@ import importlib
 COMMAND_MODULES: list[str] = [
     "ecgtrust.data.download",
     "ecgtrust.audit",
+    "ecgtrust.train_cli",
 ]
 
 

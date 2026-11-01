@@ -32,3 +32,16 @@ def test_baseline_is_seeded():
     a = fit_baseline(x, y, 1).predict_proba(x)
     b = fit_baseline(x, y, 1).predict_proba(x)
     assert np.array_equal(a, b)
+
+
+def test_load_features_indexed_numeric(tmp_path):
+    from ecgtrust.features.ptbxl_plus import load_features
+
+    d = tmp_path / "features"
+    d.mkdir()
+    pd.DataFrame(
+        {"P_Area_I": [1.0, np.nan], "ecg_id": [21803, 1], "flag": ["a", "b"], "HR": [60, 70]}
+    ).to_csv(d / "12sl_features.csv", index=False)
+    f = load_features(tmp_path, "12sl")
+    assert f.index.name == "ecg_id" and list(f.index) == [21803, 1]
+    assert list(f.columns) == ["P_Area_I", "HR"] and np.isnan(f.loc[1, "P_Area_I"])
