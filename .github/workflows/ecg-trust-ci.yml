@@ -1,0 +1,28 @@
+name: ecg-trust CI
+
+on:
+  push:
+    paths: ["ecg-trust/**", ".github/workflows/ecg-trust-ci.yml"]
+  pull_request:
+    paths: ["ecg-trust/**", ".github/workflows/ecg-trust-ci.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ecg-trust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install CPU PyTorch
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install package
+        run: pip install -e ".[serve,dev]"
+      - name: Lint
+        run: ruff check src tests
+      - name: Test (no network)
+        run: pytest -q -m "not network"
