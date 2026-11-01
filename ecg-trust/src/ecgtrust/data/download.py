@@ -22,7 +22,13 @@ from ecgtrust.config import Config
 
 DatasetName = Literal["ptbxl", "ptbxl_plus", "external"]
 CHUNK = 1 << 20
-_TRANSIENT = (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError, OSError)
+_TRANSIENT = (
+    urllib.error.URLError,
+    http.client.HTTPException,
+    ConnectionError,
+    TimeoutError,
+    OSError,
+)
 
 
 class ChecksumError(Exception):
@@ -114,6 +120,7 @@ def download_file(
 
 
 # --- dataset selection (spec §2; plan Task 2) -------------------------------------------
+
 
 def _ptbxl(p: str) -> bool:
     return p in {"ptbxl_database.csv", "scp_statements.csv"} or p.startswith("records100/")
