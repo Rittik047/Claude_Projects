@@ -98,8 +98,9 @@ def train_model(
             + "\n"
         )
         log.flush()
-        if val > best:
-            best, best_epoch, bad = val, epoch, 0
+        score = val if np.isfinite(val) else -1.0  # degenerate val split: keep training state
+        if score > best:
+            best, best_epoch, bad = score, epoch, 0
             best_state = {k: v.clone() for k, v in model.state_dict().items()}
         else:
             bad += 1
