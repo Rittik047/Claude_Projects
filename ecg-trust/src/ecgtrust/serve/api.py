@@ -7,6 +7,7 @@ import io
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -47,7 +48,7 @@ def create_app(predictor: Predictor | None = None) -> FastAPI:
         return run(x, body.fs)
 
     @app.post("/predict/npy", response_model=PredictionResult)
-    async def predict_npy(file: UploadFile = File(...), fs: int = Form(...)):
+    async def predict_npy(file: Annotated[UploadFile, File()], fs: Annotated[int, Form()]):
         try:
             x = np.load(io.BytesIO(await file.read()), allow_pickle=False)
         except ValueError as e:
