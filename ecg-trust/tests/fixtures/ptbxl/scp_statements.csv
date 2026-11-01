@@ -1,0 +1,9 @@
+,description,diagnostic,form,rhythm,diagnostic_class,diagnostic_subclass,Statement Category,SCP-ECG Statement Description,AHA code,aECG REFID,CDISC Code,DICOM Code
+NDT,non-diagnostic T abnormalities,1.0,1.0,,STTC,STTC,other ST-T descriptive statements,non-diagnostic T abnormalities,,,,
+NORM,normal ECG,1.0,,,NORM,NORM,Normal/abnormal,normal ECG,1,,,F-000B7
+IMI,inferior myocardial infarction,1.0,,,MI,IMI,Myocardial Infarction,inferior myocardial infarction,161,,,
+LVH,left ventricular hypertrophy,1.0,,,HYP,LVH,Ventricular Hypertrophy,left ventricular hypertrophy,142,,C71076,
+LAFB,left anterior fascicular block,1.0,,,CD,LAFB/LPFB,Intraventricular and intra-atrial Conduction disturbances,left anterior fascicular block,101,MDC_ECG_BEAT_BLK_ANT_L_HEMI,C62267,D3-33140
+LVOLT,low QRS voltages in the frontal and horizontal leads,,1.0,,,,Other QRS morphology descriptive statements,low QRS voltages in the frontal and horizontal leads,,,,
+SR,sinus rhythm,,,1.0,,,Statements related to impulse formation (abnormalities),sinus rhythm,20,MDC_ECG_RHY_SINUS_RHY,,
+AFIB,atrial fibrillation,,,1.0,,,Statements related to impulse formation (abnormalities),atrial fibrillation,50,MDC_ECG_RHY_ATR_FIB,,D3-31520
