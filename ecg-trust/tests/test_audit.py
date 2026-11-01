@@ -44,6 +44,10 @@ def fixture_cfg(tmp_path):
             "STTC": [False, True, True],
             "CD": [False, False, True],
             "HYP": [False, False, False],
+            "has_label": [True, True, False],
+            "STTC_liberal": [False, True, True],
+            "has_label_liberal": [True, True, True],
+            **{f"{c}_liberal": [False] * 3 for c in ("NORM", "MI", "CD", "HYP")},
         }
     ).to_parquet(cfg.artifacts / "external_meta.parquet")
     return cfg
@@ -76,3 +80,10 @@ def test_likelihood_zero_counts_diagnostic_codes_only(fixture_cfg):
         "| diagnostic SCP codes with likelihood 0 (still counted, benchmark convention) | 1 |"
         in txt
     )
+
+
+def test_audit_reports_external_label_availability(fixture_cfg):
+    txt = run_audit(fixture_cfg).read_text()
+    assert "| signal OK but no superclass (excluded, as in PTB-XL) | 1 |" in txt
+    assert "| evaluated (signal OK and labelled) | 1 |" in txt
+    assert "### Sensitivity: liberal label map" in txt

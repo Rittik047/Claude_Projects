@@ -71,10 +71,12 @@ All files verified against the dataset's SHA256SUMS.txt.
 | item | value |
 |---|---|
 | records | 45152 |
-| included | 43559 |
-| excluded | 1593 |
+| signal OK | 43559 |
+| signal excluded | 1593 |
+| signal OK but no superclass (excluded, as in PTB-XL) | 14913 |
+| evaluated (signal OK and labelled) | 28646 |
 
-### Exclusions by reason
+### Signal exclusions by reason
 
 | reason | records |
 |---|---|
@@ -82,31 +84,45 @@ All files verified against the dataset's SHA256SUMS.txt.
 | nan | 97 |
 | read_error | 2 |
 
-### Mapped superclass prevalence (included records; NORM = sinus-rhythm-only proxy)
+### Mapped superclass prevalence — primary (strict, PTB-XL-faithful) map
+
+NORM = proxy: only sinus-family rhythm codes (SR, SB, ST, SA).
 
 | class | positives | prevalence | status (min 100 positives) |
 |---|---|---|---|
-| NORM | 5726 | 13.1% | ok |
-| MI | 122 | 0.3% | ok |
-| STTC | 10226 | 23.5% | ok |
-| CD | 3141 | 7.2% | ok |
-| HYP | 756 | 1.7% | ok |
+| NORM | 18723 | 65.4% | ok |
+| MI | 204 | 0.7% | ok |
+| STTC | 5587 | 19.5% | ok |
+| CD | 5045 | 17.6% | ok |
+| HYP | 757 | 2.6% | ok |
 
-### Demographics (included)
+### Sensitivity: liberal label map
+
+Adds isolated ST/T-wave findings → STTC and voltage-only criteria → HYP. Evaluated records: 37331.
+
+| class | positives | prevalence | status (min 100 positives) |
+|---|---|---|---|
+| NORM | 18723 | 50.2% | ok |
+| MI | 204 | 0.5% | ok |
+| STTC | 13166 | 35.3% | ok |
+| CD | 5045 | 13.5% | ok |
+| HYP | 6140 | 16.4% | ok |
+
+### Demographics (evaluated, primary map)
 
 | sex | records |
 |---|---|
-| male | 24579 |
-| female | 18958 |
-| unknown | 22 |
+| male | 15344 |
+| female | 13287 |
+| unknown | 15 |
 
 | age band | records |
 |---|---|
-| 40-59 | 13237 |
-| 60-79 | 18394 |
-| 80-89 | 5798 |
-| <40 | 6075 |
-| unknown | 55 |
+| 40-59 | 9598 |
+| 60-79 | 10971 |
+| 80-89 | 3257 |
+| <40 | 4781 |
+| unknown | 39 |
 
 ## 12SL statement vocabulary
 

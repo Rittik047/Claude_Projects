@@ -94,20 +94,33 @@ because 12SL is not available at deployment time.
   Matching that reference is a sanity check, not a target.
 
 ### 4.3 External-label harmonisation (`ecg-arrhythmia` → superclasses)
-A versioned CSV maps the 63 acronyms to superclasses. Proposed default mapping, to be
-reviewed by the author before external test:
-- **CD:** 1AVB, 2AVB*, 3AVB, AVB, LBBB, RBBB, IVB/IDC, LBBBB, LFBBB, WPW, VPE, PRIE
-- **HYP:** LVH, RVH, RAH
-- **STTC:** STTC, STDD, STE, STTU, TWC, TWO, QTIE
-- **MI:** MI, MIBW, MIFW, MILW, MISW
-- **NORM (proxy):** `SR` as the only code. This is a proxy, because sinus rhythm alone
-  ≠ a normal ECG, and it is reported as such.
-- Codes with no PTB-XL superclass equivalent (rhythm, axis, ectopy, etc.) are not used as
-  targets.
+*Revised and approved by the author on 2026-11-01, after the M1 audit.*
 
-External metrics are reported per mapped class with prevalence. Classes with fewer than 100
-positives are reported as "insufficient". A known caveat is reported rather than corrected:
-the source annotations differ in labelling process, and the label shift is expected.
+The versioned CSV `configs/external_label_map.csv` covers **all 94 SNOMED CT codes present in
+the records**. That is 63 from the dataset's `ConditionNames_SNOMED-CT.csv` plus 43 codes
+missing from that file, named from the PhysioNet Challenge 2021 dx mapping.
+
+It has two columns:
+
+- **`superclass` (primary, strict, PTB-XL-faithful).**
+  - Follows PTB-XL's own `scp_statements.csv`: isolated ST depression/elevation, T-wave
+    inversion/change and voltage-only LVH are *form* statements there, so they are unmapped.
+  - CD: AV blocks incl. Mobitz II, complete/incomplete RBBB and LBBB, generic BBB, LAFB/LPFB,
+    IVB, WPW/pre-excitation, PR prolongation.
+  - HYP: LVH, RVH, RAH, LAH/LAE.
+  - STTC: "ST-T change", "ST changes" (≈ PTB-XL `NST_`), QT prolongation (≈ `LNGQT`).
+  - MI: MI and its wall variants, anterior MI, acute MI.
+- **`superclass_liberal` (sensitivity analysis).** Adds isolated ST/T findings → STTC and
+  voltage-only criteria (LV/RA high voltage) → HYP.
+- **NORM (proxy, both maps).** The record's codes are all sinus-family rhythms (sinus rhythm,
+  bradycardia, tachycardia, arrhythmia) and nothing else. The proxy is reported as such.
+- **Exclusion.** As PTB-XL excludes records with no diagnostic superclass, external records
+  with no superclass under the map in use are excluded from evaluation (`has_label`).
+  Signal-quality exclusions (flat lead, NaN, unreadable, wrong length) are tracked separately.
+
+External metrics are reported per class with prevalence. Classes with fewer than 100
+positives are reported as "insufficient". MI has 204 positives (0.7 %), so its estimate is
+reported as indicative. The label shift is expected and is reported rather than corrected.
 
 ### 4.4 Commercial comparator (GE 12SL statements, PTB-XL+)
 The 12SL machine statements are mapped to superclasses via the same reviewed-table approach.

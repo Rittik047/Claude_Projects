@@ -7,6 +7,7 @@ from ecgtrust.data.external import (
     ExternalLabelError,
     external_labels,
     flat_leads,
+    label_external_meta,
     load_label_map,
     parse_header_comments,
     resample_to_100,
@@ -42,7 +43,10 @@ def test_missing_dx_line():
 def test_label_harmonisation():
     m = load_label_map(CFG_MAP)
     y = external_labels([164889003, 59118001, 164934002], m)  # AFIB, RBBB, TWC
-    assert y == {"NORM": False, "MI": False, "STTC": True, "CD": True, "HYP": False}
+    # strict (PTB-XL-faithful): isolated T-wave change is a form statement, not STTC
+    assert y == {"NORM": False, "MI": False, "STTC": False, "CD": True, "HYP": False}
+    lib = load_label_map(CFG_MAP, column="superclass_liberal")
+    assert external_labels([164889003, 59118001, 164934002], lib)["STTC"]
 
 
 def test_shared_codes_map_once():
@@ -79,3 +83,35 @@ def test_flatline_detected():  # Review Focus 2
     x = good_signal()
     x[3] = 0.0
     assert flat_leads(x) == [3] and flat_leads(good_signal()) == []
+
+
+def test_codes_missing_from_condition_list_are_mapped():
+    m = load_label_map(CFG_MAP)
+    assert (
+        m[713427006] == "CD" and m[445118002] == "CD" and m[733534002] == "CD"
+    )  # CRBBB LAFB CLBBB
+    assert m[6374002] == "CD" and m[713426002] == "CD"  # BBB, IRBBB
+    assert m[54329005] == "MI" and m[57054005] == "MI"  # anterior MI, acute MI
+    assert m[55930002] == "STTC" and m[446813000] == "HYP"  # ST changes, LA hypertrophy
+
+
+def test_voltage_only_codes_are_hyp_only_in_liberal_map():
+    strict, lib = load_label_map(CFG_MAP), load_label_map(CFG_MAP, column="superclass_liberal")
+    assert strict[55827005] is None and lib[55827005] == "HYP"  # LV high voltage
+
+
+def test_norm_proxy_accepts_sinus_family_only():
+    m = load_label_map(CFG_MAP)
+    assert external_labels([426177001], m)["NORM"]  # sinus bradycardia alone
+    assert external_labels([427084000, 427393009], m)["NORM"]  # sinus tachy + arrhythmia
+    assert not external_labels([426177001, 164889003], m)["NORM"]  # + AFIB
+
+
+def test_label_external_meta_flags_unlabelled_records():
+    import pandas as pd
+
+    meta = pd.DataFrame({"dx": ["426177001", "164889003", "59118001,164934002", ""]})
+    out = label_external_meta(meta, CFG_MAP)
+    assert out.has_label.tolist() == [True, False, True, False]  # SB→NORM, AF-only→none
+    assert out.loc[2, "CD"] and not out.loc[2, "STTC"] and out.loc[2, "STTC_liberal"]
+    assert out.has_label_liberal.tolist() == [True, False, True, False]

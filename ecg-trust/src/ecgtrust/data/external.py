@@ -2,7 +2,11 @@
 
 Records are 12-lead, 500 Hz, 10 s, with `Age`, `Sex`, `Dx` (SNOMED CT) header comments.
 Diagnoses are harmonised to PTB-XL superclasses through the reviewed table
-`configs/external_label_map.csv` (spec §4.3). NORM is a *proxy*: sinus rhythm as the only code.
+`configs/external_label_map.csv` (spec §4.3). Column `superclass` is the strict, PTB-XL-faithful
+primary map (isolated ST/T and voltage-only findings are PTB-XL *form* statements, so unmapped);
+`superclass_liberal` is the sensitivity map. NORM is a *proxy*: only sinus-family rhythm codes
+(SR, SB, ST, SA). As in PTB-XL, records with no superclass are excluded from evaluation
+(`has_label` False); signal-quality exclusions are kept separately in `excluded_reason`.
 """
 
 from __future__ import annotations
@@ -21,6 +25,8 @@ from ecgtrust import CLASSES, FS, LEADS, N_SAMPLES
 from ecgtrust.data.ptbxl import age_band
 
 SINUS_RHYTHM = 426783006
+# sinus rhythm, sinus bradycardia, sinus tachycardia, sinus arrhythmia (irregularity)
+SINUS_FAMILY = frozenset({426783006, 426177001, 427084000, 427393009})
 EXPECTED_SAMPLES = 5000  # 10 s at 500 Hz
 
 
@@ -46,11 +52,11 @@ def parse_header_comments(text: str) -> dict:
     return {"age": age, "sex": sex, "dx": dx}
 
 
-def load_label_map(path: Path) -> dict[int, str | None]:
+def load_label_map(path: Path, column: str = "superclass") -> dict[int, str | None]:
     out: dict[int, str | None] = {}
     with open(path, newline="", encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
-            code, sc = int(row["snomed_ct"]), (row["superclass"].strip() or None)
+            code, sc = int(row["snomed_ct"]), (row[column].strip() or None)
             if code in out and out[code] != sc:
                 raise ExternalLabelError(f"code {code} mapped to {out[code]} and {sc}")
             out[code] = sc
@@ -60,8 +66,22 @@ def load_label_map(path: Path) -> dict[int, str | None]:
 def external_labels(dx: list[int], label_map: dict[int, str | None]) -> dict[str, bool]:
     mapped = {label_map.get(c) for c in dx} - {None}
     y = {c: c in mapped for c in CLASSES}
-    y["NORM"] = list(dx) == [SINUS_RHYTHM]
+    y["NORM"] = bool(dx) and set(dx) <= SINUS_FAMILY
     return y
+
+
+def label_external_meta(meta: pd.DataFrame, label_map_path: Path) -> pd.DataFrame:
+    """Add strict labels (CLASSES, has_label) and liberal ones (<C>_liberal, has_label_liberal)
+    computed from the comma-separated `dx` column."""
+    out = meta.copy()
+    dx = [[int(c) for c in str(d).split(",") if c.strip().isdigit()] for d in out["dx"]]
+    for column, suffix in (("superclass", ""), ("superclass_liberal", "_liberal")):
+        m = load_label_map(label_map_path, column)
+        y = pd.DataFrame([external_labels(d, m) for d in dx], index=out.index)
+        for c in CLASSES:
+            out[c + suffix] = y[c].astype(bool)
+        out["has_label" + suffix] = y[list(CLASSES)].any(axis=1)
+    return out
 
 
 def resample_to_100(x: np.ndarray, fs: int) -> np.ndarray:
@@ -78,7 +98,7 @@ def flat_leads(x: np.ndarray, tol: float = 1e-4) -> list[int]:
     return [i for i in range(x.shape[0]) if float(np.nanstd(x[i])) < tol]
 
 
-def _read(path_no_ext: Path, label_map) -> tuple[np.ndarray | None, dict]:
+def _read(path_no_ext: Path) -> tuple[np.ndarray | None, dict]:
     rec = {"record": path_no_ext.name, "excluded_reason": ""}
     try:
         sig, fields = wfdb.rdsamp(str(path_no_ext))
@@ -87,7 +107,6 @@ def _read(path_no_ext: Path, label_map) -> tuple[np.ndarray | None, dict]:
         return None, rec
     h = parse_header_comments("\n".join(fields.get("comments", [])))
     rec.update(age=h["age"], sex=h["sex"], dx=",".join(map(str, h["dx"])))
-    rec.update(external_labels(h["dx"], label_map))
     names = [n.strip().upper() for n in fields["sig_name"]]
     if any(ld.upper() not in names for ld in LEADS):
         rec["excluded_reason"] = "missing_lead"
@@ -109,10 +128,9 @@ def _read(path_no_ext: Path, label_map) -> tuple[np.ndarray | None, dict]:
 def build_external_cache(root: Path, label_map_path: Path, out_dir: Path, workers: int = 8):
     """Write `external_x100.npy` (included records only) and `external_meta.parquet`."""
     paths = sorted(p.with_suffix("") for p in Path(root, "WFDBRecords").rglob("*.hea"))
-    label_map = load_label_map(label_map_path)
     with ThreadPoolExecutor(workers) as ex:
-        results = list(ex.map(lambda p: _read(p, label_map), paths))
-    meta = pd.DataFrame([r for _, r in results])
+        results = list(ex.map(_read, paths))
+    meta = label_external_meta(pd.DataFrame([r for _, r in results]), label_map_path)
     meta["age_band"] = meta["age"].apply(lambda a: age_band(float("nan") if a is None else a))
     keep = [x for x, _ in results if x is not None]
     meta["cache_row"] = -1

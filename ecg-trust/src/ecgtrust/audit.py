@@ -98,43 +98,59 @@ def _ptbxl(cfg: Config) -> str:
     )
 
 
+def _prevalence(df: pd.DataFrame, cfg: Config, suffix: str = "") -> list[tuple]:
+    rows = []
+    for c in CLASSES:
+        n = int(df[c + suffix].sum())
+        status = "ok" if n >= cfg.external_min_pos else "insufficient"
+        rows.append((c, n, f"{df[c + suffix].mean():.1%}", status))
+    return rows
+
+
 def _external(cfg: Config) -> str:
     p = cfg.artifacts / "external_meta.parquet"
     if not p.exists():
         return "## External\n\nNot built yet."
     m = pd.read_parquet(p)
-    inc = m[m.excluded_reason == ""]
+    if "has_label" not in m:
+        m["has_label"] = m[list(CLASSES)].any(axis=1)
+    ok = m[m.excluded_reason == ""]
+    ev = ok[ok.has_label]
     reasons = m.loc[m.excluded_reason != "", "excluded_reason"].str.split(":").str[0]
-    rows = [
-        (
-            c,
-            int(inc[c].sum()),
-            f"{inc[c].mean():.1%}",
-            "ok" if inc[c].sum() >= cfg.external_min_pos else "insufficient",
-        )
-        for c in CLASSES
-    ]
-    return "\n\n".join(
-        [
-            "## External",
-            _table([("records", len(m)), ("included", len(inc)), ("excluded", len(m) - len(inc))]),
-            "### Exclusions by reason",
-            _table(list(reasons.value_counts().items()) or [("none", 0)], ("reason", "records")),
-            "### Mapped superclass prevalence (included records; NORM = sinus-rhythm-only proxy)",
-            _table(
-                rows,
+    hdr = ("class", "positives", "prevalence", f"status (min {cfg.external_min_pos} positives)")
+    parts = [
+        "## External",
+        _table(
+            [
+                ("records", len(m)),
+                ("signal OK", len(ok)),
+                ("signal excluded", len(m) - len(ok)),
                 (
-                    "class",
-                    "positives",
-                    "prevalence",
-                    f"status (min {cfg.external_min_pos} positives)",
+                    "signal OK but no superclass (excluded, as in PTB-XL)",
+                    int((~ok.has_label).sum()),
                 ),
-            ),
-            "### Demographics (included)",
-            _table(list(inc.sex.value_counts().items()), ("sex", "records")),
-            _table(list(inc.age_band.value_counts().sort_index().items()), ("age band", "records")),
+                ("evaluated (signal OK and labelled)", len(ev)),
+            ]
+        ),
+        "### Signal exclusions by reason",
+        _table(list(reasons.value_counts().items()) or [("none", 0)], ("reason", "records")),
+        "### Mapped superclass prevalence — primary (strict, PTB-XL-faithful) map\n\n"
+        "NORM = proxy: only sinus-family rhythm codes (SR, SB, ST, SA).",
+        _table(_prevalence(ev, cfg), hdr),
+    ]
+    if "has_label_liberal" in m:
+        ev_lib = ok[ok.has_label_liberal]
+        parts += [
+            "### Sensitivity: liberal label map\n\nAdds isolated ST/T-wave findings → STTC and "
+            f"voltage-only criteria → HYP. Evaluated records: {len(ev_lib)}.",
+            _table(_prevalence(ev_lib, cfg, "_liberal"), hdr),
         ]
-    )
+    parts += [
+        "### Demographics (evaluated, primary map)",
+        _table(list(ev.sex.value_counts().items()), ("sex", "records")),
+        _table(list(ev.age_band.value_counts().sort_index().items()), ("age band", "records")),
+    ]
+    return "\n\n".join(parts)
 
 
 def _vocab_12sl(cfg: Config) -> str:
