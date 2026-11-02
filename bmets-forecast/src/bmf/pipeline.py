@@ -35,11 +35,24 @@ class Ctx:
         p = cfg["paths"]
         self.cache, self.reports = Path(p["cache"]), Path(p["reports"])
         self.figs = Path(p.get("figures", self.reports / "figures"))
+        if (cfg.get("subset") or {}).get("n_patients"):   # smoke runs never touch the full run's outputs
+            rep = self.reports
+            self.cache = self.cache.with_name(self.cache.name + "_smoke")
+            self.reports = rep.with_name(rep.name + "_smoke")
+            self.figs = self.reports / self.figs.relative_to(rep) if self.figs.is_relative_to(rep) else self.reports / "figures"
         self.cache.mkdir(parents=True, exist_ok=True); self.reports.mkdir(parents=True, exist_ok=True)
         self.labels = cfg.get("labels", {"NETC": 1, "SNFH": 2, "ET": 3, "RC": 4})
 
     def clin(self):
-        return load_clinical(self.cfg["paths"]["clinical"])
+        c = load_clinical(self.cfg["paths"]["clinical"])
+        sub = self.cfg.get("subset") or {}
+        n = sub.get("n_patients")
+        if n:   # smoke tests: seeded sample of patients with enough scans to form intervals
+            n_tp = c.filter(like="age_t").notna().sum(axis=1)
+            pool = c[n_tp >= sub.get("min_timepoints", 3)]
+            c = pool.sample(n=min(int(n), len(pool)), random_state=self.cfg.get("seed", 2026))
+            c = c.sort_values("case_id").reset_index(drop=True)
+        return c
 
     def tp(self):
         return pd.read_csv(self.cache / "timepoints.csv")
@@ -488,6 +501,8 @@ STAGES = {
 
 # ---------------------------------------------------------------- locked external validation
 def _lock_dir(c: Ctx) -> Path:
+    if (c.cfg.get("subset") or {}).get("n_patients"):
+        return c.cache / "locked"
     return Path(c.cfg.get("lock_dir", c.cache / "locked"))
 
 

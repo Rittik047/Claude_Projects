@@ -33,7 +33,7 @@ def test_juno_scripts_reference_cli():
 def test_colab_notebooks_valid():
     nbformat = pytest.importorskip("nbformat")
     nbs = sorted((ROOT / "colab").glob("*.ipynb"))
-    assert len(nbs) == 5
+    assert len(nbs) == 6
     used = set()
     for p in nbs:
         nb = nbformat.read(str(p), as_version=4)

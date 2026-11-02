@@ -31,6 +31,26 @@ def nb(title, intro, cells):
 
 
 NOTEBOOKS = {
+    "00_smoke_test.ipynb": nb("00 · Smoke test on a 12-patient subset (run this first)",
+        "Runs every CPU-capable stage on 12 seeded patients (each with at least 3 MRIs) using the expert segmentations. "
+        "Outputs go to `cache_smoke/` and `reports_smoke/` on Drive, so the full run is never touched. "
+        "Settings: 3 folds, 200 bootstraps, 5 epochs, simple radiomics, and the random3d encoder. A CPU runtime is enough; it takes about 30–60 min. "
+        "The numbers are meaningless; only crashes and data-layout problems matter.",
+        [("code", "N = 12\nS = f'--config {CFG} --subset {N}'\n"
+                  "for st in ['audit', 'index', 'splits']:\n    !bmf {st} {S}"),
+         ("code", "import pandas as pd\nix = pd.read_csv(os.environ['BMF_DRIVE'] + '/cache_smoke/index.csv')\n"
+                  "print(ix.groupby('seq').exists.mean().round(2))   # share of studies with each sequence found\n"
+                  "assert ix.query(\"seq == 't1c'\").exists.astype(str).eq('True').all(), 'missing t1c: check BMF_DATA layout'"),
+         ("code", "import glob, nibabel as nib, numpy as np\nf = sorted(glob.glob(os.environ['BMF_DATA'] + '/*/*seg*.nii.gz'))[0]\n"
+                  "print(f, np.unique(nib.load(f).get_fdata()))   # expect {0,1,2,3} (+4 resection cavity)"),
+         ("code", "for st in ['preprocess', 'track', 'labels', 'features']:\n    !bmf {st} {S}\n"
+                  "!bmf embed {S} --encoder random3d"),
+         ("code", "for m in ['P0', 'P1', 'P2', 'P3', 'P5']:\n    !bmf train {S} --model {m} --task T2a\n"
+                  "!bmf train {S} --model P1 --task T3\n!bmf train {S} --model O1 --task T4\n"
+                  "for st in ['evaluate', 'explain', 'figures', 'report']:\n    !bmf {st} {S}"),
+         ("code", "print(open(os.environ['BMF_DRIVE'] + '/reports_smoke/figures_log.txt').read())   # one line = no figure failed\n"
+                  "import json; r = json.load(open(os.environ['BMF_DRIVE'] + '/reports_smoke/results.json'))\n"
+                  "print(json.dumps(r['cohort'], indent=1)); print({m: round(v['auroc'], 2) for m, v in r['T2a']['models'].items()})")]),
     "01_setup_and_audit.ipynb": nb("01 · Setup, data check and cohort audit",
         "Upload the Aspera download to `MyDrive/bmets/UCSD-BMETS-Longitudinal/` and the four TSVs to `MyDrive/bmets/clinical/`. "
         "You need about 350 GB of Drive space (raw data plus the preprocessed cache). Otherwise run preprocessing on Juno and copy `cache/pp` to Drive.",

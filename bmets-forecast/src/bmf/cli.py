@@ -22,6 +22,7 @@ def main(argv=None) -> int:
     p.add_argument("--method", default="S0")
     p.add_argument("--seg-source", dest="seg_source", default="expert")
     p.add_argument("--force", action="store_true")
+    p.add_argument("--subset", type=int, default=None, help="smoke test: keep N seeded patients with >=3 MRIs")
     p.add_argument("--map", default=None, help="to-layout: CSV study_id,seq,path")
     p.add_argument("--out", default=None, help="to-layout: output root")
     a = p.parse_args(argv)
@@ -29,8 +30,15 @@ def main(argv=None) -> int:
     if a.stage == "to-layout":
         to_layout(a.map, a.out)
         return 0
-    ctx = Ctx(load_config(a.config))
-    STAGES[a.stage](ctx, **{k: v for k, v in vars(a).items() if k not in ("stage", "config", "map", "out")})
+    cfg = load_config(a.config)
+    if a.subset:   # smoke test: few patients, light statistics, separate *_smoke outputs (see Ctx)
+        cfg.setdefault("subset", {})["n_patients"] = a.subset
+        cfg["n_folds"] = min(int(cfg.get("n_folds", 5)), 3)
+        cfg.setdefault("bootstrap", {})["n"] = 200
+        cfg.setdefault("train", {})["epochs"] = 5
+        cfg["radiomics_backend"] = "simple"
+    ctx = Ctx(cfg)
+    STAGES[a.stage](ctx, **{k: v for k, v in vars(a).items() if k not in ("stage", "config", "map", "out", "subset")})
     return 0
 
 

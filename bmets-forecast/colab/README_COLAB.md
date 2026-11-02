@@ -10,6 +10,7 @@ MyDrive/bmets/
   clinical/                  # the 4 TSVs from the TCIA page
   weights/                   # foundation-model checkpoints (names in configs/colab.yaml)
   cache/  reports/           # created by the notebooks
+  cache_smoke/  reports_smoke/   # created by 00_smoke_test (safe to delete)
 ```
 
 **Storage:** raw data 163 GB plus the preprocessed cache (about 150 GB) needs a Google One plan of at least 2 TB. Without it, a hybrid works best: run `02_preprocess` on Juno, then copy only `cache/pp`, `cache/*.csv` and `cache/splits.json` to Drive (about 150 GB) and start from notebook 03 or 04.
@@ -18,6 +19,7 @@ MyDrive/bmets/
 
 | Notebook | GPU | Sessions |
 |---|---|---|
+| 00_smoke_test | no (CPU runtime) | 1, about 30–60 min: 12 patients, every CPU stage; writes only `cache_smoke/` and `reports_smoke/` |
 | 01_setup_and_audit | optional | 1 |
 | 02_preprocess | no (use a CPU runtime to save compute units) | 1–8 shards, resumable |
 | 03_segmentation | A100 | 1 per fold (10 total: S0 and S2 × 5 folds), resumes with `--c` |

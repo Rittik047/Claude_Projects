@@ -259,10 +259,11 @@ def build(out: Path):
                   "Download with Aspera: <i>bash juno/01_aspera_pull.sh \"&lt;Faspex link&gt;\"</i> (or Aspera Connect on a laptop + rsync). Copy the 4 TSVs to <i>$BMF_SCRATCH/clinical/</i>.",
                   "Check the label values of the first segmentation (expected {0,1,2,3}[,4]).",
                   "Put BrainSegFounder and SAM-Med3D checkpoints in <i>$BMF_SCRATCH/weights/</i> (names in configs/juno.yaml).",
+                  "Smoke test first: <i>sbatch juno/00b_smoke.sbatch</i> runs every CPU stage on 12 seeded patients (&ge;3 MRIs each), writes only <i>cache_smoke/</i> and <i>reports_smoke/</i>, and ends with SMOKE OK.",
                   "<i>bash juno/run_all.sh</i> submits preprocess → seg-export → nnU-Net (10 GPU jobs) → seg-eval, and embed → train/evaluate → figures/report, chained with SLURM dependencies.",
                   "Commit only <i>reports/results.json</i>, <i>reports/tables/</i>, <i>reports/figures/</i>."])
     s += [P("9.2 Route 2 &mdash; Google Colab Pro (A100) + Drive", H2)]
-    s += bullets(["Drive folder <i>MyDrive/bmets/</i> with the data, the TSVs and weights; notebooks 01&ndash;05 in <i>colab/</i>, each starting with the same setup cell (mount, clone, install).",
+    s += bullets(["Drive folder <i>MyDrive/bmets/</i> with the data, the TSVs and weights; notebooks 00&ndash;05 in <i>colab/</i> (00 = 12-patient smoke test on a CPU runtime), each starting with the same setup cell (mount, clone, install).",
                   "Raw + preprocessed data need ~350 GB of Drive; otherwise preprocess on Juno and copy <i>cache/pp</i> to Drive.",
                   "nnU-Net: one fold per session, resumable with <i>--c</i>; preprocessing in 8 resumable shards."])
     s += [P("9.3 Compute budget (approximate)", H2),
@@ -272,7 +273,7 @@ def build(out: Path):
           P("9.4 Command reference", H2),
           P("<font face='Courier' size='8'>bmf audit | index | splits | preprocess [--shard i/n] | seg-export | seg-eval --pred-dir D --method S0 | track | labels | features | "
             "embed --encoder E --device cuda | train --model P0..P5|O1 --task T2a|T2b|T3|T4 | evaluate | explain --task T2a | figures | report | lock --task T2a | external --task T2a | "
-            "to-layout --map map.csv --out DIR</font>", B), PageBreak()]
+            "to-layout --map map.csv --out DIR; any stage + --subset N = smoke run</font>", B), PageBreak()]
     # ---- 11 external, reporting, timeline
     s += [P("10. External validation, reporting and timeline", H1), P("10.1 External cohorts (locked, single run)", H2),
           table([["Cohort", "What it tests", "Notes"],

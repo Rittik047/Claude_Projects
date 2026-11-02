@@ -34,6 +34,14 @@ Download into `$BMF_SCRATCH/weights/`, using the file names in `configs/juno.yam
 
 ## 3. Run
 
+Run the smoke test first (12 patients, every CPU stage, about 1 h). It writes only to `cache_smoke/` and `reports_smoke/`, and its log ends with `SMOKE OK`:
+
+```bash
+sbatch juno/00b_smoke.sbatch            # BMF_SMOKE_N=20 sbatch ... for a larger subset
+```
+
+Then the full run:
+
 ```bash
 bash juno/run_all.sh          # submits 01b (index, once) -> 02 -> 03a -> 03 (10 GPU array jobs) -> 03b, 04 -> 05 -> 06 with dependencies
 squeue -u $USER               # monitor; logs in $BMF_SCRATCH/logs
