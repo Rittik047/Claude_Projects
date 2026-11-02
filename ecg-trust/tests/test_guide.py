@@ -1,6 +1,7 @@
 import json
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,17 @@ import pytest
 from ecgtrust.config import load_config
 
 CFG = Path(__file__).resolve().parents[1] / "configs" / "default.yaml"
-pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="needs node + playwright")
+
+
+def _has_playwright() -> bool:
+    """CI runners ship node but not Playwright's Chromium, which the PDF render needs."""
+    if shutil.which("node") is None:
+        return False
+    probe = "require('playwright').chromium.executablePath()"
+    return subprocess.run(["node", "-e", probe], capture_output=True).returncode == 0
+
+
+pytestmark = pytest.mark.skipif(not _has_playwright(), reason="needs node + playwright")
 
 
 def _metrics(point):
