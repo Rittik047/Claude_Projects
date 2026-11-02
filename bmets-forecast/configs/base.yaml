@@ -22,5 +22,5 @@ fm:
   urls:
     brainsegfounder: https://github.com/lab-smile/BrainSegFounder
     samed3d: https://github.com/uni-medical/SAM-Med3D
-    medsam2: https://github.com/bowang-lab/MedSAM2
+    nnunet_enc: local nnU-Net S0 checkpoint (fold_k/checkpoint_final.pth)
 bootstrap: {n: 2000}
