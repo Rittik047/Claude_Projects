@@ -1,1 +1,2 @@
 2026-11-02T03:11:43+00:00 split=test model=resnet freeze=234e641a4a00
+2026-11-02T03:31:52+00:00 split=test model=fusion freeze=234e641a4a00
