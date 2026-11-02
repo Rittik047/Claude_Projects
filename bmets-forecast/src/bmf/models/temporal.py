@@ -27,7 +27,7 @@ class TemporalTransformer(nn.Module):
         self.head = nn.Sequential(nn.LayerNorm(d_model), nn.Linear(d_model, 1))
         self.d_model = d_model
 
-    def forward(self, seq, dt, clin=None, mask=None, return_attn: bool = False):
+    def forward(self, seq, dt, clin=None, mask=None):
         B, T, _ = seq.shape
         mask = torch.ones(B, T, dtype=torch.bool, device=seq.device) if mask is None else mask
         seq = torch.where(mask[..., None], seq, torch.zeros_like(seq))
