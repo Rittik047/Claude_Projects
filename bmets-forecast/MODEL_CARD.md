@@ -1,0 +1,22 @@
+# Model card: bmets-forecast
+
+- **Intended use:** research on forecasting brain-metastasis evolution from serial MRI. **Not a medical device and not for clinical decisions.**
+- **Inputs:** skull-stripped multiparametric brain MRI (t1c, t1n, t2f, t2w; optionally ADC, SWAN, ASL) at one or more time points, plus age, sex, primary tumour, prior resection, planned radiation and scan interval.
+- **Outputs:**
+  - voxel segmentation (NETC/SNFH/ET);
+  - lesion tracks;
+  - probability of next-scan intracranial progression (T2a) and of new metastases (T2b);
+  - per-lesion volume ratio (T3);
+  - survival risk (T4).
+- **Training data:** UCSD-BMETS-Longitudinal (300 patients, 1,065 MRIs, UCSD 2016–2023; 97% GE scanners; 3T 60% / 1.5T 40%).
+- **Evaluation:** 5-fold patient-level cross-validation, then a single locked external run (see `reports/`).
+- **Foundation-model components:** BrainSegFounder (SwinUNETR) and SAM-Med3D encoders, under their own licences; check each repository before redistribution.
+- **Known limitations:**
+  - Ages are recorded to 0.1 years, so scan intervals are coarse.
+  - There is no radiation dose or type and no systemic-therapy detail.
+  - Labels are derived from segmentations.
+  - The cohort comes from a single institution.
+  - Survival is censored at the last MRI.
+  - Radiation is confounded by indication.
+- **Fairness:** performance is reported by primary tumour, sex, radiation status and field strength. Race and ethnicity are available, but subgroups are small.
+- **Ethical considerations:** de-identified public data (TCIA). Results must not be used to withhold imaging or treatment.

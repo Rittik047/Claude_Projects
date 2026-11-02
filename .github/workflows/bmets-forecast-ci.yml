@@ -1,0 +1,26 @@
+name: bmets-forecast CI
+
+on:
+  push:
+    paths: ["bmets-forecast/**", ".github/workflows/bmets-forecast-ci.yml"]
+  pull_request:
+    paths: ["bmets-forecast/**", ".github/workflows/bmets-forecast-ci.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bmets-forecast
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install CPU PyTorch
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install package
+        run: pip install -e ".[test]" lifelines pypdf
+      - name: Test (synthetic data only)
+        run: pytest -q -p no:warnings
