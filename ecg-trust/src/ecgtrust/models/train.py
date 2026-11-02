@@ -1,8 +1,12 @@
-"""Deterministic CPU training loop with early stopping on val_select macro-AUROC."""
+"""Seeded training loop; keeps the epoch with the best val_select macro-AUROC.
+
+Runs on CUDA when available (set ECGTRUST_DEVICE=cpu to force CPU). GPU results match CPU
+results closely but not bit-for-bit, because some cuDNN kernels are non-deterministic."""
 
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 from pathlib import Path
@@ -17,7 +21,15 @@ from ecgtrust.evaluate.metrics import macro_auroc
 from ecgtrust.models.resnet1d import ResNet1d
 
 
+def device() -> torch.device:
+    want = os.environ.get("ECGTRUST_DEVICE", "")
+    if want:
+        return torch.device(want)
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def set_seed(seed: int) -> None:
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -46,7 +58,11 @@ def _to_tensor(x: np.ndarray, idx, mean, std) -> torch.Tensor:
 @torch.no_grad()
 def predict_logits_array(model: nn.Module, x: np.ndarray, mean, std, bs: int = 256) -> np.ndarray:
     model.eval()
-    out = [model(_to_tensor(x, idx, mean, std)).numpy() for idx in _batches(len(x), bs, None)]
+    dev = next(model.parameters()).device
+    out = [
+        model(_to_tensor(x, idx, mean, std).to(dev)).cpu().numpy()
+        for idx in _batches(len(x), bs, None)
+    ]
     return np.concatenate(out)
 
 
@@ -65,14 +81,15 @@ def train_model(
     out_dir.mkdir(parents=True, exist_ok=True)
     set_seed(seed)
     mean, std = fit_lead_stats(np.asarray(x_tr))
-    model = build_model(tc)
+    dev = device()
+    model = build_model(tc).to(dev)
     epochs = max_epochs or tc["max_epochs"]
     steps = int(np.ceil(len(x_tr) / tc["batch_size"]))
     opt = torch.optim.AdamW(model.parameters(), lr=tc["lr"], weight_decay=tc["weight_decay"])
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=tc["lr"], total_steps=epochs * steps)
     loss_fn = nn.BCEWithLogitsLoss()
     gen = torch.Generator().manual_seed(seed)
-    y_tr_t = torch.from_numpy(np.asarray(y_tr, dtype=np.float32))
+    y_tr_t = torch.from_numpy(np.asarray(y_tr, dtype=np.float32)).to(dev)
     best, best_epoch, best_state, bad = -np.inf, 0, None, 0
     log = (out_dir / "train_log.jsonl").open("w")
     for epoch in range(1, epochs + 1):
@@ -80,7 +97,8 @@ def train_model(
         t0, total, n = time.time(), 0.0, 0
         for idx in _batches(len(x_tr), tc["batch_size"], gen):
             opt.zero_grad()
-            loss = loss_fn(model(_to_tensor(x_tr, idx, mean, std)), y_tr_t[idx])
+            xb = _to_tensor(x_tr, idx, mean, std).to(dev, non_blocking=True)
+            loss = loss_fn(model(xb), y_tr_t[torch.from_numpy(idx).to(dev)])
             loss.backward()
             opt.step()
             sched.step()
@@ -101,7 +119,7 @@ def train_model(
         score = val if np.isfinite(val) else -1.0  # degenerate val split: keep training state
         if score > best:
             best, best_epoch, bad = score, epoch, 0
-            best_state = {k: v.clone() for k, v in model.state_dict().items()}
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         else:
             bad += 1
             if bad >= tc["patience"]:
