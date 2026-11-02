@@ -257,8 +257,8 @@ def build(out: Path):
     s += [P("9. How to run", H1), P("9.1 Route 1 &mdash; UTD Juno (recommended for heavy stages)", H2)]
     s += bullets(["Clone the repo on Juno; edit <i>juno/00_env.sh</i> (partitions from <i>sinfo -s</i>, scratch path); <i>source juno/00_env.sh</i> creates the conda env; run <i>pytest -q</i>.",
                   "Download with Aspera: <i>bash juno/01_aspera_pull.sh \"&lt;Faspex link&gt;\"</i> (or Aspera Connect on a laptop + rsync). Copy the 4 TSVs to <i>$BMF_SCRATCH/clinical/</i>.",
-                  "Check the label values of the first segmentation (expected {0,1,2,3}[,4]).",
-                  "Put BrainSegFounder and SAM-Med3D checkpoints in <i>$BMF_SCRATCH/weights/</i> (names in configs/juno.yaml).",
+                  "<i>bash scripts/get_weights.sh $BMF_SCRATCH/weights</i>: downloads SAM-Med3D-turbo (Hugging Face) and the BrainSegFounder Drive folder; link the BraTS fine-tuned 4-channel SwinUNETR as <i>brainsegfounder_swinunetr_brats.pt</i>. Channels are fed as (FLAIR, T1ce, T1, T2) with 128&sup3; patches, as in its BraTS fine-tuning.",
+                  "<i>bmf check</i> (also run inside 01b and the smoke test): tests the label scheme against MRI contrast physics (ET brightest on t1c; SNFH FLAIR-hyperintense; label 4 not enhancing, which catches the old BraTS ET=4 scheme) and loads each checkpoint, refusing any that match &lt;90% of the encoder tensors.",
                   "Smoke test first: <i>sbatch juno/00b_smoke.sbatch</i> runs every CPU stage on 12 seeded patients (&ge;3 MRIs each), writes only <i>cache_smoke/</i> and <i>reports_smoke/</i>, and ends with SMOKE OK.",
                   "<i>bash juno/run_all.sh</i> submits preprocess → seg-export → nnU-Net (10 GPU jobs) → seg-eval, and embed → train/evaluate → figures/report, chained with SLURM dependencies.",
                   "Commit only <i>reports/results.json</i>, <i>reports/tables/</i>, <i>reports/figures/</i>."])

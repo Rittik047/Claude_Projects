@@ -219,7 +219,7 @@ def stage_embed(c: Ctx, encoder: str | None = None, device: str = "cpu", **_):
             continue
         vol, _, _ = load_study(pidx, sid, SEQS_CORE)
         seg, _ = _load_seg(c, sid)
-        save_embeddings(out, embed_study(ENCODERS[enc], model, vol, seg, device=device))
+        save_embeddings(out, embed_study(ENCODERS[enc], model, vol, seg, device=device, seqs=SEQS_CORE))
 
 
 # ---------------------------------------------------------------- modelling
@@ -565,4 +565,24 @@ def to_layout(map_csv: str, out_dir: str) -> Path:
     return out
 
 
-STAGES.update({"lock": stage_lock, "external": stage_external})
+def stage_check(c: Ctx, **_):
+    """Pre-flight: label scheme vs MRI contrast physics, and foundation-model weights. Writes reports/check.json."""
+    from .checks import check_labels, check_weights
+    lab = check_labels(c.index(), c.labels, n=int(c.cfg.get("check", {}).get("n_studies", 20)), seed=c.cfg.get("seed", 2026))
+    w = check_weights(c.cfg)
+    (c.reports / "check.json").write_text(json.dumps({"labels": lab, "weights": w}, indent=1))
+    log.info("labels: values %s in %d studies -> %s", lab["values"], lab["n_studies"], "OK" if lab["ok"] else "PROBLEM")
+    for k, d in lab["per_label"].items():
+        log.info("  %-6s value %d  t1c z %+.2f  FLAIR z %+.2f  median voxels %.0f", k, d["value"], d["t1c_z"], d["t2f_z"], d["voxels_median"])
+    for p in lab["problems"]:
+        log.error("  %s", p)
+    for k, d in w.items():
+        log.info("weights %-16s %s %s", k, d["status"].upper(),
+                 {"ok": f"matched {d.get('matched_fraction')} -> {d.get('embedding_dim')}-d",
+                  "missing": f"{d.get('path')} (download: {d.get('download')})"}.get(d["status"], d.get("message", "")))
+    bad = (not lab["ok"]) or any(d["status"] == "error" for d in w.values())
+    if bad:
+        raise RuntimeError(f"check failed; see {c.reports / 'check.json'}")
+
+
+STAGES.update({"lock": stage_lock, "external": stage_external, "check": stage_check})

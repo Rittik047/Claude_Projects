@@ -35,10 +35,13 @@ def _run(model, patches: list[np.ndarray], device, bs=4) -> np.ndarray:
 
 
 def embed_study(spec: EncoderSpec, model, vol: np.ndarray, seg: np.ndarray, device="cpu",
-                min_brain_frac: float = 0.1, lesion_labels=(1, 3)) -> dict:
+                min_brain_frac: float = 0.1, lesion_labels=(1, 3), seqs=("t1c", "t1n", "t2f", "t2w")) -> dict:
     """brain = mean embedding of non-overlapping patches with >= min_brain_frac brain voxels;
-    lesions = embedding of a patch centred on each ET∪NETC component (26-connected)."""
+    lesions = embedding of a patch centred on each ET∪NETC component (26-connected).
+    `vol` channels follow `seqs`; they are reordered to `spec.channels` when the encoder was trained on another order."""
     model = model.to(device).eval()
+    if spec.channels:
+        vol = vol[[list(seqs).index(c) for c in spec.channels]]
     v = _adapt_channels(vol.astype(np.float32), spec.in_channels)
     p = spec.patch
     brain = np.abs(vol).sum(0) > 0

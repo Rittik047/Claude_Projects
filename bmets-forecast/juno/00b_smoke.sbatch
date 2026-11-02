@@ -9,7 +9,7 @@
 set -euo pipefail
 source "${BMF_HOME:-$HOME/Claude_Projects/bmets-forecast}/juno/00_env.sh"
 S=(--config "$BMF_CONFIG" --subset "${BMF_SMOKE_N:-12}")
-for st in audit index splits preprocess track labels features; do bmf "$st" "${S[@]}"; done
+for st in audit index check splits preprocess track labels features; do bmf "$st" "${S[@]}"; done
 bmf embed "${S[@]}" --encoder random3d
 for m in P0 P1 P2 P3 P5; do bmf train "${S[@]}" --model "$m" --task T2a; done
 bmf train "${S[@]}" --model P1 --task T3

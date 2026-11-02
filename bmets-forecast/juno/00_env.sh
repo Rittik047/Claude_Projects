@@ -7,6 +7,7 @@ export BMF_SCRATCH="${BMF_SCRATCH:-/scratch/$USER/bmets}"     # large, fast stor
 
 export BMF_DATA="$BMF_SCRATCH/UCSD-BMETS-Longitudinal"         # Aspera download lands here
 export BMF_CONFIG="$BMF_HOME/configs/juno.yaml"
+export SAMMED3D_REPO="$BMF_SCRATCH/weights/SAM-Med3D"       # cloned by scripts/get_weights.sh
 export nnUNet_raw="$BMF_SCRATCH/cache/nnunet_raw"
 export nnUNet_preprocessed="$BMF_SCRATCH/cache/nnunet_preprocessed"
 export nnUNet_results="$BMF_SCRATCH/cache/nnunet_results"

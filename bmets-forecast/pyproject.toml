@@ -11,7 +11,7 @@ dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "pyyaml", "nibabel",
   "lightgbm", "shap", "matplotlib", "seaborn", "scikit-image", "reportlab", "nbformat"]
 
 [project.optional-dependencies]
-dl = ["torch", "monai", "nnunetv2"]
+dl = ["torch", "monai", "einops", "nnunetv2"]
 extra = ["antspyx", "pyradiomics", "lifelines", "umap-learn"]
 test = ["pytest"]
 

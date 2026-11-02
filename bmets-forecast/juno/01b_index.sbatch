@@ -8,4 +8,5 @@
 source "${BMF_HOME:-$HOME/Claude_Projects/bmets-forecast}/juno/00_env.sh"
 bmf audit  --config "$BMF_CONFIG"
 bmf index  --config "$BMF_CONFIG"
+bmf check  --config "$BMF_CONFIG"     # stops the chain if the label scheme or a checkpoint is wrong
 bmf splits --config "$BMF_CONFIG"

@@ -10,6 +10,7 @@ drive.mount('/content/drive')
 import os
 os.environ['BMF_DRIVE'] = '/content/drive/MyDrive/bmets'                       # change if you use another folder
 os.environ['BMF_DATA'] = os.environ['BMF_DRIVE'] + '/UCSD-BMETS-Longitudinal'   # Aspera download target (uploaded to Drive)
+os.environ['SAMMED3D_REPO'] = os.environ['BMF_DRIVE'] + '/weights/SAM-Med3D'     # cloned by scripts/get_weights.sh
 os.makedirs(os.environ['BMF_DRIVE'], exist_ok=True)
 REPO = '/content/claude_projects'
 if not os.path.exists(REPO):
@@ -41,8 +42,7 @@ NOTEBOOKS = {
          ("code", "import pandas as pd\nix = pd.read_csv(os.environ['BMF_DRIVE'] + '/cache_smoke/index.csv')\n"
                   "print(ix.groupby('seq').exists.mean().round(2))   # share of studies with each sequence found\n"
                   "assert ix.query(\"seq == 't1c'\").exists.astype(str).eq('True').all(), 'missing t1c: check BMF_DATA layout'"),
-         ("code", "import glob, nibabel as nib, numpy as np\nf = sorted(glob.glob(os.environ['BMF_DATA'] + '/*/*seg*.nii.gz'))[0]\n"
-                  "print(f, np.unique(nib.load(f).get_fdata()))   # expect {0,1,2,3} (+4 resection cavity)"),
+         ("code", "!bmf check {S}   # label scheme vs MRI contrast physics + any weights present; stops on a problem"),
          ("code", "for st in ['preprocess', 'track', 'labels', 'features']:\n    !bmf {st} {S}\n"
                   "!bmf embed {S} --encoder random3d"),
          ("code", "for m in ['P0', 'P1', 'P2', 'P3', 'P5']:\n    !bmf train {S} --model {m} --task T2a\n"
@@ -57,8 +57,12 @@ NOTEBOOKS = {
         [("code", "!pytest -q -p no:warnings tests  # synthetic tests: must pass"),
          ("code", "!bmf audit --config $CFG\n!bmf index --config $CFG\n!bmf splits --config $CFG"),
          ("code", "import json; print(json.dumps(json.load(open(os.environ['BMF_DRIVE'] + '/reports/audit.json')), indent=1)[:2000])"),
-         ("md", "**Check the label values** of the first segmentation before continuing. Expected: {0,1,2,3}, plus 4 for a resection cavity."),
-         ("code", "import glob, nibabel as nib, numpy as np\nf = sorted(glob.glob(os.environ['BMF_DATA'] + '/*/*seg*.nii.gz'))[0]\nprint(f, np.unique(nib.load(f).get_fdata()))")]),
+         ("md", "**Weights.** Download SAM-Med3D-turbo and the BrainSegFounder Drive folder, then link the BraTS fine-tuned 4-channel checkpoint as "
+                "`weights/brainsegfounder_swinunetr_brats.pt`."),
+         ("code", "!bash scripts/get_weights.sh $BMF_DRIVE/weights\n# !ln -sf \"$BMF_DRIVE/weights/brainsegfounder_drive/<chosen>.pt\" $BMF_DRIVE/weights/brainsegfounder_swinunetr_brats.pt"),
+         ("md", "**Pre-flight check.** This checks the label scheme against MRI contrast physics (ET brightest on t1c, oedema bright on FLAIR, no old-BraTS ET=4) "
+                "and loads each checkpoint. A wrong scheme or a wrong checkpoint stops here."),
+         ("code", "!bmf check --config $CFG\nimport json; print(json.dumps(json.load(open(os.environ['BMF_DRIVE'] + '/reports/check.json')), indent=1)[:3000])")]),
     "02_preprocess.ipynb": nb("02 · Preprocessing (resumable)",
         "This stage is CPU-bound. Each session processes one shard and skips studies already done, so re-run it until all 8 shards finish. A full run takes about 6–10 h in total.",
         [("code", "SHARD = 0   # run 0..7, one per session if needed\n!bmf preprocess --config $CFG --shard {SHARD}/8"),
