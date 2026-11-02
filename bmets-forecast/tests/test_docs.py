@@ -35,3 +35,15 @@ def test_manuscript_fill(tmp_path):
 def test_analysis_plan_frozen():
     plan = (ROOT / "docs/analysis_plan.md").read_bytes()
     assert hashlib.sha256(plan).hexdigest() == (ROOT / "docs/analysis_plan.sha256").read_text().split()[0]
+
+
+def test_guide_contains_preflight_instructions(tmp_path):
+    out = tmp_path / "guide.pdf"
+    subprocess.run([sys.executable, str(ROOT / "docs/guide/build_guide.py"), "--out", str(out)], check=True, cwd=ROOT)
+    from pypdf import PdfReader
+    text = " ".join(p.extract_text() for p in PdfReader(str(out)).pages).replace("\n", " ")
+    for needle in ["Pre-flight checklist", "get_weights.sh", "sam_med3d_turbo.pth", "SAMMED3D_REPO",
+                   "brainsegfounder_swinunetr_brats.pt", "bmf check", "check.json", "old BraTS",
+                   "remove_flair_t1ce.py", "FLAIR, T1ce, T1, T2", "00b_smoke.sbatch", "00_smoke_test", "SMOKE OK",
+                   "drive.google.com"]:
+        assert needle in text, needle

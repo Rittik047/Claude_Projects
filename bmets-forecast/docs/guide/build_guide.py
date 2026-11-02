@@ -19,7 +19,7 @@ from reportlab.lib.enums import TA_CENTER  # noqa: E402
 from reportlab.lib.pagesizes import letter  # noqa: E402
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # noqa: E402
 from reportlab.lib.units import inch  # noqa: E402
-from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table,  # noqa: E402
+from reportlab.platypus import (CondPageBreak, Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table,  # noqa: E402
                                 TableStyle)
 
 DOCS = Path(__file__).resolve().parents[1]
@@ -57,7 +57,7 @@ def fig(rel: str, caption: str, w=6.2, synthetic=False):
 
 def table(rows, widths, header=True, fs=8):
     t = Table([[Paragraph(str(c), ParagraphStyle("c", parent=SM, fontSize=fs, textColor=colors.black)) for c in r] for r in rows],
-              colWidths=[w * inch for w in widths])
+              colWidths=[w * inch for w in widths], repeatRows=1 if header else 0)
     st = [("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#c3c2b7")), ("VALIGN", (0, 0), (-1, -1), "TOP"),
           ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]
     if header:
@@ -98,6 +98,100 @@ def tracking_diagram(out: Path) -> Path:
     f.suptitle("Lesion tracking (Hungarian matching, 10 mm gate) and label derivation", fontsize=10)
     f.savefig(out, dpi=200, bbox_inches="tight", facecolor="#fcfcfb"); plt.close(f)
     return out
+
+
+CODE = ParagraphStyle("CODE", parent=B, fontName="Courier", fontSize=7.8, leading=10, leftIndent=10,
+                      backColor=colors.HexColor("#f2f2f2"), borderPadding=(3, 4, 3, 4), spaceBefore=3, spaceAfter=5)
+
+
+def code(*lines):
+    esc = (l.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("  ", "&nbsp;&nbsp;") for l in lines)
+    return Paragraph("<br/>".join(esc), CODE)
+
+
+def preflight_section():
+    """9.5-9.9: everything to do and verify before the full run (weights, label scheme, smoke test)."""
+    s = [CondPageBreak(3.2 * inch), P("9.5 Pre-flight checklist (in this order, before the full run)", H2),
+         table([["#", "Step", "Command", "Pass when"],
+                ["1", "Install, synthetic tests", "source juno/00_env.sh; pytest -q", "all tests pass"],
+                ["2", "Data and TSVs in place; cohort audit", "bmf audit --config $BMF_CONFIG",
+                 "reports/audit.json: 300 patients, 1,065 time points, 748 intervals"],
+                ["3", "Index the image files", "bmf index --config $BMF_CONFIG", "every study has t1c (cache/index.csv)"],
+                ["4", "Download foundation-model weights (9.6)", "bash scripts/get_weights.sh $BMF_SCRATCH/weights",
+                 "sam_med3d_turbo.pth present; BrainSegFounder file linked"],
+                ["5", "Label scheme + weights check (9.7, 9.8)", "bmf check --config $BMF_CONFIG",
+                 "labels OK; every checkpoint OK matched 1.0"],
+                ["6", "Smoke test on 12 patients (9.9)", "sbatch juno/00b_smoke.sbatch (Colab: 00_smoke_test)",
+                 "log ends with SMOKE OK; figures_log.txt has one line"],
+                ["7", "Full run", "bash juno/run_all.sh (Colab: notebooks 01&ndash;05)", "reports/results.json written"]],
+               [0.25, 1.75, 2.45, 2.35])]
+    s += [P("9.6 Downloading the foundation-model weights", H2),
+          P("Run on a machine with internet access (Juno login node, or a Colab cell). The script needs "
+            "<i>huggingface.co</i>, <i>github.com</i> and <i>drive.google.com</i>; a sandbox that blocks Google Drive cannot fetch BrainSegFounder.", B),
+          code("bash scripts/get_weights.sh $BMF_SCRATCH/weights        # Juno",
+               "!bash scripts/get_weights.sh $BMF_DRIVE/weights          # Colab (notebook 01)"),
+          P("<b>SAM-Med3D-turbo</b> (ViT-B, 1 channel, 128&sup3;; Wang et al. 2023). Downloaded automatically from Hugging Face "
+            "<i>blueyo0/SAM-Med3D</i> as <i>sam_med3d_turbo.pth</i>. Its model code has no pip installer, so the script clones "
+            "github.com/uni-medical/SAM-Med3D into <i>weights/SAM-Med3D</i>, and <i>juno/00_env.sh</i> and the Colab setup cell export "
+            "<i>SAMMED3D_REPO</i> pointing there. The architecture is <i>vit_b_ori</i>, the default model type in the SAM-Med3D training script. "
+            "SAM-Med3D receives the t1c channel only.", B),
+          P("<b>BrainSegFounder</b> (SwinUNETR, feature size 48; Cox et al. 2024). The authors publish checkpoints and fold JSONs in a Google "
+            "Drive folder linked from their README (drive.google.com/drive/folders/1fl3FeMEhv_cnIwrDa5geHPbKL-tHAuQE). The script downloads the "
+            "folder with <i>gdown</i> and lists every .pt/.pth file. Pick the <b>BraTS fine-tuned 4-channel SwinUNETR</b> checkpoint (any single "
+            "fold; use the same one throughout) and link it under the name the configs expect:", B),
+          code("ln -sf \"$PWD/brainsegfounder_drive/<chosen file>\" $BMF_SCRATCH/weights/brainsegfounder_swinunetr_brats.pt"),
+          P("Open the fold JSON in the same folder: each <i>image</i> list should read <i>flair, t1ce, t1, t2</i>. If it differs, "
+            "edit <i>channels</i> for brainsegfounder in <i>src/bmf/fm/registry.py</i> before embedding.", B)]
+    s += [P("9.7 Checking the segmentation label scheme", H2),
+          P("The pipeline assumes the BraTS-METS 2025 scheme: <b>1 NETC</b> (non-enhancing tumour core), <b>2 SNFH</b> (surrounding FLAIR "
+            "hyperintensity), <b>3 ET</b> (enhancing tumour), <b>4 RC</b> (resection cavity). A permuted scheme still has values {0,1,2,3}, so "
+            "<i>bmf check</i> also tests each label against MRI contrast physics. It samples 20 segmented studies (<i>check.n_studies</i>), "
+            "z-scores t1c and FLAIR inside the brain, and takes the median per label and study:", B),
+          table([["Rule", "Physical basis", "Failure means"],
+                 ["values are a subset of {0,1,2,3,4}", "&mdash;", "foreign label scheme"],
+                 ["ET (3) has the highest median t1c z of the tumour labels",
+                  "gadolinium crosses the disrupted blood&ndash;brain barrier, so enhancing tumour is brightest after contrast",
+                  "ET is permuted with NETC or SNFH"],
+                 ["SNFH (2) median FLAIR z &gt; 0", "vasogenic oedema = excess extracellular water: long T2, FLAIR-hyperintense",
+                  "oedema label permuted"],
+                 ["label 4 is not the most enhancing label", "RC is fluid (dark on t1c)",
+                  "old BraTS 2017&ndash;2021 scheme (1 NCR, 2 ED, 4 ET)"],
+                 ["at least one ET voxel in the sample", "metastases almost always enhance", "ET missing or mislabelled"]],
+                [2.1, 2.6, 2.1]),
+          KeepTogether([P("Expected log (synthetic cohort shown; real values differ but keep the ordering):", B),
+                        code("labels: values [0, 1, 2, 3] in 20 studies -> OK",
+                             "  NETC   value 1  t1c z -0.15  FLAIR z +1.93",
+                             "  SNFH   value 2  t1c z -0.14  FLAIR z +4.17",
+                             "  ET     value 3  t1c z +6.64  FLAIR z -0.24")]),
+          P("The full result is written to <i>reports/check.json</i> (aggregate only). If a rule fails, the log names it and the stage stops "
+            "(and so does the SLURM chain, because the check runs in <i>01b_index.sbatch</i>). Fix the mapping in the route config, for example "
+            "<i>labels: {NETC: 1, SNFH: 2, ET: 4, RC: 5}</i>, or remap the files, then re-run <i>bmf check</i>.", B)]
+    s += [P("9.8 What the weight check verifies, and why channel order matters", H2),
+          *bullets(["<b>Presence:</b> each file named under <i>fm.weights</i> in the route config exists (otherwise MISSING, with the download link).",
+                   "<b>Correct architecture:</b> the checkpoint is matched to the encoder by tensor name and shape. Fewer than 90% matched "
+                   "&rarr; the file is refused. Before this guard, a wrong file loaded silently with random weights and would have been "
+                   "reported as a foundation model.",
+                   "<b>Usable output:</b> a forward pass on one patch must give a finite 768-d (BrainSegFounder) or 384-d (SAM-Med3D) embedding. "
+                   "A good file prints <i>OK matched 1.0 -&gt; 768-d</i>.",
+                   "<b>Channel order:</b> a pretrained multi-channel encoder expects each MRI sequence in the slot it was trained on. "
+                   "BrainSegFounder's BraTS fine-tuning orders inputs <b>FLAIR, T1ce, T1, T2</b>: its <i>jsons/remove_flair_t1ce.py</i> removes "
+                   "FLAIR and T1ce by dropping the first two images. The pipeline stores (t1c, t1n, t2f, t2w) and reorders to "
+                   "(t2f, t1c, t1n, t2w) for this encoder.",
+                   "<b>Patch size and normalisation:</b> 128&sup3; patches, as in the BrainSegFounder BraTS launch script (roi 128). Its "
+                   "per-channel z-score over nonzero voxels matches our preprocessing."])]
+    s += [P("9.9 Smoke test on a subset", H2),
+          P("Before the full run, run every CPU stage on 12 seeded patients (each with at least 3 MRIs) using the expert "
+            "segmentations, so path, layout and label problems surface in under an hour rather than after days of GPU time.", B),
+          code("sbatch juno/00b_smoke.sbatch                 # Juno; BMF_SMOKE_N=20 sbatch ... for more patients",
+               "colab/00_smoke_test.ipynb (CPU runtime)      # Colab",
+               "bmf <stage> --config <route>.yaml --subset 12  # any single stage"),
+          *bullets(["Runs audit, index, check, splits, preprocess, track, labels, features, embed (random3d), P0&ndash;P5 (T2a), T3, T4, "
+                   "evaluate, explain, figures and report.",
+                   "Uses 3 folds, 200 bootstraps, 5 epochs and simple radiomics.",
+                   "Writes only to <i>cache_smoke/</i> and <i>reports_smoke/</i> (locked models included), never to the full run's outputs; safe to delete afterwards.",
+                   "Pass: the log ends with <b>SMOKE OK</b> and <i>reports_smoke/figures_log.txt</i> has one line (no figure failed). The AUROCs are "
+                   "meaningless at n = 12; only crashes and layout problems matter."])]
+    return s
 
 
 def build(out: Path):
@@ -273,7 +367,9 @@ def build(out: Path):
           P("9.4 Command reference", H2),
           P("<font face='Courier' size='8'>bmf audit | index | splits | preprocess [--shard i/n] | seg-export | seg-eval --pred-dir D --method S0 | track | labels | features | "
             "embed --encoder E --device cuda | train --model P0..P5|O1 --task T2a|T2b|T3|T4 | evaluate | explain --task T2a | figures | report | lock --task T2a | external --task T2a | "
-            "to-layout --map map.csv --out DIR; any stage + --subset N = smoke run</font>", B), PageBreak()]
+            "to-layout --map map.csv --out DIR; any stage + --subset N = smoke run</font>", B)]
+    s += preflight_section()
+    s += [PageBreak()]
     # ---- 11 external, reporting, timeline
     s += [P("10. External validation, reporting and timeline", H1), P("10.1 External cohorts (locked, single run)", H2),
           table([["Cohort", "What it tests", "Notes"],
