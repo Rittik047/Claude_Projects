@@ -98,7 +98,12 @@ def cindex_ci(time, event, risk, groups, n_boot: int = 2000, seed: int = 0):
     for idx in cluster_bootstrap_indices(groups, n_boot, seed):
         if event[idx].sum() == 0:
             continue
-        vals.append(f(event[idx], time[idx], risk[idx]))
+        try:
+            vals.append(f(event[idx], time[idx], risk[idx]))
+        except ZeroDivisionError:            # no admissible pairs in this resample
+            continue
+    if not vals:
+        return float(f(event, time, risk)), np.nan, np.nan
     return float(f(event, time, risk)), float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
 
 

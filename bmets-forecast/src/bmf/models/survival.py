@@ -12,10 +12,17 @@ def cox_cv(X: pd.DataFrame, surv: pd.DataFrame, splits: dict, penalizer: float =
     folds = X.index.map(splits).to_numpy()
     for k in sorted(set(folds)):
         tr, te = folds != k, folds == k
-        mu, sd = X[tr].mean(), X[tr].std().replace(0, 1)
-        Z = ((X - mu) / sd).fillna(0)
-        cph = CoxPHFitter(penalizer=penalizer)
-        cph.fit(Z[tr].join(surv[["time_years", "event"]]), "time_years", "event")
+        keep = X.columns[X[tr].std() > 0]                       # drop columns constant in the training fold
+        mu, sd = X[tr][keep].mean(), X[tr][keep].std()
+        Z = ((X[keep] - mu) / sd).fillna(0)
+        from lifelines.exceptions import ConvergenceError
+        for pen in (penalizer, penalizer * 10, penalizer * 100):
+            try:
+                cph = CoxPHFitter(penalizer=pen)
+                cph.fit(Z[tr].join(surv[["time_years", "event"]]), "time_years", "event")
+                break
+            except ConvergenceError:
+                continue
         out.append(pd.DataFrame({"risk": cph.predict_partial_hazard(Z[te]).to_numpy().ravel(), "fold": k}, index=X.index[te]))
     return pd.concat(out)
 
