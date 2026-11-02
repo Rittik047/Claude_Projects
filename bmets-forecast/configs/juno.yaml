@@ -1,0 +1,15 @@
+# Juno route: values are read from 00_env.sh paths; edit only if you changed BMF_SCRATCH.
+paths:
+  data_root: /scratch/${USER}/bmets/UCSD-BMETS-Longitudinal
+  clinical: /scratch/${USER}/bmets/clinical/UCSD-BMETS-Longitudinal_TCIA_Clinical_Data.tsv
+  mri_meta: /scratch/${USER}/bmets/clinical/UCSD-BMETS-Longitudinal_TCIA_MRImetadata.tsv
+  cache: /scratch/${USER}/bmets/cache
+  reports: reports
+  figures: reports/figures
+lock_dir: /scratch/${USER}/bmets/cache/locked
+radiomics_backend: pyradiomics
+preprocess: {n4: true, register_backend: sitk, affine_longitudinal: true}
+train: {epochs: 60, encoder: brainsegfounder}
+fm:
+  weights_dir: /scratch/${USER}/bmets/weights
+  weights: {brainsegfounder: brainsegfounder_swinunetr_brats.pt, samed3d: sam_med3d_turbo.pth}

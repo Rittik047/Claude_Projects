@@ -6,12 +6,12 @@ import logging
 import sys
 
 from .config import load_config
-from .pipeline import STAGES, Ctx
+from .pipeline import STAGES, Ctx, to_layout
 
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="bmf", description=__doc__)
-    p.add_argument("stage", choices=sorted(STAGES))
+    p.add_argument("stage", choices=sorted(STAGES) + ["to-layout"])
     p.add_argument("--config", default=None, help="route config (merged over configs/base.yaml)")
     p.add_argument("--model", default="P0", help="P0|P1|P2|P3|P5 (T2), P1 (T3), O1 (T4)")
     p.add_argument("--task", default="T2a", help="T2a|T2b|T3|T4")
@@ -22,10 +22,15 @@ def main(argv=None) -> int:
     p.add_argument("--method", default="S0")
     p.add_argument("--seg-source", dest="seg_source", default="expert")
     p.add_argument("--force", action="store_true")
+    p.add_argument("--map", default=None, help="to-layout: CSV study_id,seq,path")
+    p.add_argument("--out", default=None, help="to-layout: output root")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    if a.stage == "to-layout":
+        to_layout(a.map, a.out)
+        return 0
     ctx = Ctx(load_config(a.config))
-    STAGES[a.stage](ctx, **{k: v for k, v in vars(a).items() if k not in ("stage", "config")})
+    STAGES[a.stage](ctx, **{k: v for k, v in vars(a).items() if k not in ("stage", "config", "map", "out")})
     return 0
 
 

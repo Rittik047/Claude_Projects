@@ -484,3 +484,70 @@ STAGES = {
     "features": stage_features, "embed": stage_embed, "train": stage_train, "evaluate": stage_evaluate,
     "explain": stage_explain, "figures": stage_figures, "report": stage_report,
 }
+
+
+# ---------------------------------------------------------------- locked external validation
+def _lock_dir(c: Ctx) -> Path:
+    return Path(c.cfg.get("lock_dir", c.cache / "locked"))
+
+
+def stage_lock(c: Ctx, task: str = "T2a", **_):
+    """Fit P0/P1 on ALL development intervals and freeze them (hash recorded) before any external run."""
+    import hashlib
+    import time
+
+    import joblib
+    from .models.cv import fit_full
+    d = _lock_dir(c); d.mkdir(parents=True, exist_ok=True)
+    h = hashlib.sha256()
+    models = {}
+    for m in ("P0", "P1"):
+        X, y = _design(c, m, task)
+        f = d / f"{task}_{m}.joblib"
+        joblib.dump({"model": fit_full(m, X, y), "columns": list(X.columns)}, f)
+        h.update(f.read_bytes()); models[m] = f.name
+    (d / "lock.json").write_text(json.dumps({"task": task, "models": models, "sha256": h.hexdigest(), "git": _git_hash(),
+                                             "time": time.strftime("%Y-%m-%dT%H:%M:%S")}, indent=1))
+
+
+def stage_external(c: Ctx, task: str = "T2a", **_):
+    """Single, locked evaluation on an external cohort prepared with the same stages (audit..features)."""
+    import joblib
+    from sklearn.metrics import average_precision_score
+    from .eval.stats import auroc_ci, calibration
+    out = c.reports / f"external_{task}.json"
+    if out.exists():
+        raise SystemExit(f"{out} exists: the external set is evaluated once (delete deliberately to re-run)")
+    lock = json.loads((_lock_dir(c) / "lock.json").read_text())
+    lab = pd.read_csv(c.cache / "labels_t2.csv").set_index(["case_id", "t"])
+    F = pd.read_csv(c.cache / "features_t2.csv").set_index(["case_id", "t"])
+    y = lab.loc[F.index, {"T2a": "prog_t2a", "T2b": "newmet_t2b"}[task]]
+    res = {"lock_sha256": lock["sha256"], "n": int(len(y)), "n_events": int(y.sum()), "models": {}}
+    for m, fn in lock["models"].items():
+        b = joblib.load(_lock_dir(c) / fn)
+        X = F.reindex(columns=b["columns"])
+        p = b["model"].predict_proba(X)[:, 1]
+        if y.nunique() == 2:
+            est, lo, hi = auroc_ci(y, p, F.index.get_level_values(0), c.cfg.get("bootstrap", {}).get("n", 2000))
+            cal = calibration(y, p)
+            res["models"][m] = {"auroc": est, "auroc_ci": [lo, hi], "auprc": float(average_precision_score(y, p)),
+                                "ece": cal["ece"], "cal_slope": cal["slope"]}
+        else:
+            res["models"][m] = {"auroc": None, "note": "single outcome class in external set"}
+    out.write_text(json.dumps(res, indent=2, default=float))
+
+
+def to_layout(map_csv: str, out_dir: str) -> Path:
+    """Arrange an external cohort into the TCIA layout <out>/<study_id>/<study_id>-<seq>.nii.gz via symlinks.
+    map_csv columns: study_id (CASE_YY), seq (t1c|t1n|t2f|t2|seg|...), path."""
+    m = pd.read_csv(map_csv)
+    out = Path(out_dir)
+    for r in m.itertuples(index=False):
+        d = out / r.study_id; d.mkdir(parents=True, exist_ok=True)
+        dst = d / f"{r.study_id}-{r.seq}.nii.gz"
+        if not dst.exists():
+            dst.symlink_to(Path(r.path).resolve())
+    return out
+
+
+STAGES.update({"lock": stage_lock, "external": stage_external})
