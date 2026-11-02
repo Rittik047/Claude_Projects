@@ -38,7 +38,7 @@ Reading the table:
 |---|---|---|
 | ![reliability](reports/figures/04_calibration/reliability_test.png) | ![noise](reports/figures/06_robustness/noise_robustness_panels.png) | ![forest](reports/figures/03_performance/auroc_forest_all_runs.png) |
 
-64 more figures, covering data, training, explainability and the 12SL comparison, are indexed in [`reports/figures/`](reports/figures/README.md). The 25-page illustrated guide is [`reports/guide/ecg_trust_guide.pdf`](reports/guide/ecg_trust_guide.pdf).
+64 more figures, covering data, training, explainability and the 12SL comparison, are indexed in [`reports/figures/`](reports/figures/README.md). The 21-page illustrated guide is [`reports/guide/ecg_trust_guide.pdf`](reports/guide/ecg_trust_guide.pdf).
 
 ## What I found
 
