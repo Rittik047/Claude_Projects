@@ -29,7 +29,12 @@ SEED_COLORS = ["#0072B2", "#D55E00", "#009E73"]
 
 
 def _run_color(name: str) -> str:
-    return next((c for k, c in RUN_COLORS.items() if k.lower() in name.lower()), MUTED)
+    """External first: 'ResNet · external' must not take the internal ResNet colour."""
+    n = name.lower()
+    for key in ("External", "Fusion", "ResNet", "12SL"):
+        if key.lower() in n:
+            return RUN_COLORS[key]
+    return MUTED
 
 
 # ---------------------------------------------------------------- 02_training
@@ -422,7 +427,8 @@ def robustness(cfg, out: Path) -> list[Path]:
     if f.exists():
         df = pd.read_csv(f)
         clean = df[df.noise == "clean"].iloc[0]
-        d = df[df.noise != "clean"].copy()
+        drop = df[df.noise == "dropout"]
+        d = df[~df.noise.isin(["clean", "dropout"])].copy()
         d["snr"] = d.level.astype(float)
         names = {"bw": "baseline wander", "emg": "muscle (EMG)", "em": "electrode motion"}
         cols = {"bw": "#0072B2", "emg": "#D55E00", "em": "#009E73"}
@@ -443,6 +449,17 @@ def robustness(cfg, out: Path) -> list[Path]:
             fontweight="bold",
         )
         files.append(save(fig, out / "noise_robustness_panels.png"))
+        if len(drop):
+            fig, ax = plt.subplots(figsize=(5, 3))
+            k = np.r_[0, drop.level.astype(int)]
+            ax.plot(k, np.r_[clean.macro_auroc, drop.macro_auroc], "o-", color="#CC79A7")
+            ax.set(
+                xlabel="leads zeroed at random",
+                ylabel="macro-AUROC",
+                title="Robustness to missing leads (internal test)",
+            )
+            ax.set_xticks(k)
+            files.append(save(fig, out / "lead_dropout.png"))
     f = cfg.reports / "test" / "occlusion.csv"
     if f.exists():
         df = pd.read_csv(f).pivot(index="class", columns="lead", values="auroc_drop")

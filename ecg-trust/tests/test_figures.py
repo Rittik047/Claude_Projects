@@ -12,7 +12,7 @@ def test_integrated_gradients_completeness():
     model = ResNet1d(width=8, blocks=(1, 1, 1, 1)).eval()
     ck = {"lead_mean": np.zeros(12), "lead_std": np.ones(12)}
     x = np.random.default_rng(0).normal(0, 1, (2, 12, 1000)).astype(np.float32)
-    att = integrated_gradients([(model, ck)], x, target=1, steps=256)
+    att = integrated_gradients([(model, ck)], x, target=1, steps=64)
     with torch.no_grad():
         fx = model(torch.from_numpy(x))[:, 1].numpy()
         f0 = model(torch.zeros(1, 12, 1000))[:, 1].numpy()
