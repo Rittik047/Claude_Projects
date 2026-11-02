@@ -1,0 +1,9 @@
+data/
+cache/
+runs/
+*.nii
+*.nii.gz
+*.npz
+__pycache__/
+*.egg-info/
+.pytest_cache/

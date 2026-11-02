@@ -1,0 +1,65 @@
+{
+  "n_patients": 300,
+  "n_timepoints": 1065,
+  "n_normal_mri": 17,
+  "post_mris_per_patient": {
+    "2": 60,
+    "3": 32,
+    "4": 208
+  },
+  "n_intervals": 748,
+  "interval_years_median": 0.2,
+  "interval_years_iqr": [
+    0.1,
+    0.2
+  ],
+  "n_zero_intervals": 60,
+  "n_rt_intervals": 247,
+  "rt_by_interval": {
+    "1->2": "127/300",
+    "2->3": "94/240",
+    "3->4": "26/208"
+  },
+  "n_resection_before": 59,
+  "n_deaths": 153,
+  "median_years_first_mri_to_death": 0.7,
+  "primary": {
+    "lung": 113,
+    "breast": 78,
+    "other": 34,
+    "melanoma": 27,
+    "gastrointestinal": 22,
+    "renal": 17,
+    "prostate": 7,
+    "gastrointestinal + lung": 1
+  },
+  "sex": {
+    "female": 167,
+    "male": 133
+  },
+  "age_first_mri_mean_sd": [
+    61.557333333333325,
+    12.87979853322288
+  ],
+  "n_studies_meta": 1065,
+  "manufacturer": {
+    "GE Medical Systems": 1037,
+    "Siemens": 22,
+    "Canon": 6
+  },
+  "field_strength": {
+    "3.0": 635,
+    "1.5": 430
+  },
+  "sequence_availability": {
+    "t1c": 1.0,
+    "t1n": 1.0,
+    "t2f": 1.0,
+    "t2w": 1.0,
+    "t1postfse": 0.9906103286384976,
+    "dwi": 0.9774647887323944,
+    "adc": 0.9896713615023475,
+    "swan": 0.9953051643192489,
+    "asl": 0.8676056338028169
+  }
+}

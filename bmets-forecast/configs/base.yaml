@@ -1,0 +1,26 @@
+# Shared configuration; route files (juno.yaml / colab.yaml) override paths and compute.
+paths:
+  data_root: data/UCSD-BMETS-Longitudinal      # folders BMETSxxxx_YY with *.nii.gz
+  clinical: data/clinical/UCSD-BMETS-Longitudinal_TCIA_Clinical_Data.tsv
+  mri_meta: data/clinical/UCSD-BMETS-Longitudinal_TCIA_MRImetadata.tsv
+  cache: cache
+  reports: reports
+  figures: reports/figures
+seed: 2026
+n_folds: 5
+seg_glob: "*seg*.nii.gz"
+labels: {NETC: 1, SNFH: 2, ET: 3, RC: 4}       # BraTS-METS 2025 scheme; verify on first case
+rano:
+  prog_increase: 0.73        # >= +73% vs nadir
+  pr_decrease: -0.65         # <= -65% vs baseline
+  new_lesion_min_cc: 0.05
+tracking: {gate_mm: 10.0}
+preprocess: {spacing_mm: 1.0, register_backend: sitk}
+fm:
+  default: brainsegfounder
+  weights_dir: cache/weights
+  urls:
+    brainsegfounder: https://github.com/lab-smile/BrainSegFounder
+    samed3d: https://github.com/uni-medical/SAM-Med3D
+    medsam2: https://github.com/bowang-lab/MedSAM2
+bootstrap: {n: 2000}

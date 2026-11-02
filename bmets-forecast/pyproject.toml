@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bmf"
+version = "0.1.0"
+description = "Forecasting intracranial disease evolution in brain metastases from longitudinal MRI (UCSD-BMETS-Longitudinal)"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "pyyaml", "nibabel", "SimpleITK",
+  "lightgbm", "shap", "matplotlib", "seaborn", "scikit-image", "reportlab", "nbformat"]
+
+[project.optional-dependencies]
+dl = ["torch", "monai", "nnunetv2"]
+extra = ["antspyx", "pyradiomics", "lifelines", "umap-learn"]
+test = ["pytest"]
+
+[project.scripts]
+bmf = "bmf.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

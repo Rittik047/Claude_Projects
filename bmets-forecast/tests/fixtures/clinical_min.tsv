@@ -1,0 +1,7 @@
+Case ID	Sex at Birth	Ethnicity	Race	Diagnosis (primary malignancy)	Diagnosis (Biopsy/Resction/Imaging/CSF)	Age at Death	MRI without metastases	Age at imaging (MRI without metastases)	Resection 	Radiation before first MRI	Age at Imaging (first MRI after diagnosis)	Radiation treatment between first and second MRI	Age at Imaging (second MRI after diagnosis)	Radiation treatment between second and third MRI	Age at Imaging (third MRI after diagnosis)	Radiation treatment between third and fourth MRI	Age at Imaging (fourth MRI after diagnosis)
+BMETS9001	Female	"Not Hispanic, Latino(a), or Spanish origin "	White 	Lung	Imaging	71.1	No		No	No	69.1	No	69.4	Yes	69.6	No	69.8
+BMETS9002	Male		Asian 	Breast	Resection 		No		Yes	No	50.0	Yes	50.2				
+BMETS9003	Female		White 	Melanoma	resection	60.0	Yes	58.0	No	No	59.0	No 	59.0	No	59.3		
+BMETS9004	Male		White 	Other	Imaging 		No		No	No	40.0	No	40.1	No	40.3	Yes	40.5
+BMETS9005	Female		Black or African American 	Lung	CSF	45.0	No		No	No	44.0	Yes	44.2				
+																	

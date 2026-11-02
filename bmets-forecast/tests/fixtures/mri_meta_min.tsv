@@ -1,0 +1,17 @@
+Study ID	Manufacturer	Model	Field Strength	t1c	t1n	t2f	t2w	t1postfse	dwi	adc	swan	asl
+BMETS9001_01	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	No
+BMETS9001_02	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9001_03	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9001_04	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	No
+BMETS9002_01	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9002_02	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9003_01	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	No
+BMETS9003_02	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9003_03	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9003_04	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	No
+BMETS9004_01	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9004_02	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9004_03	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	No
+BMETS9004_04	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9005_01	GE Medical Systems	Signa HDxt	1.5	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes
+BMETS9005_02	GE Medical Systems	Signa HDxt	3	Yes	Yes	Yes	Yes	Yes	Yes	Yes	Yes	No
