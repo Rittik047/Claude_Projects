@@ -12,6 +12,7 @@ COMMAND_MODULES: list[str] = [
     "ecgtrust.train_cli",
     "ecgtrust.freeze",
     "ecgtrust.evaluate.report",
+    "ecgtrust.results",
     "ecgtrust.readme_tables",
     "ecgtrust.guide.build",
 ]
