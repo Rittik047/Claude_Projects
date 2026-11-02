@@ -57,3 +57,11 @@ def lesion_summary(per_tp: dict, tracks: pd.DataFrame, clin: pd.DataFrame, inter
         row["n_resolved_so_far"] = float((tr.status == "resolved").sum())
         rows.append(row)
     return pd.DataFrame(rows).set_index(["case_id", "t"])
+
+
+def add_deltas(R: pd.DataFrame, prefix: str = "rad_") -> pd.DataFrame:
+    """Append change-over-time columns rad_delta_<name> = value(t) - value(t-1) within patient (0 at t = 1)."""
+    R = R.sort_index()
+    D = R.groupby(level="case_id").diff().fillna(0.0)
+    D.columns = [c.replace(prefix, f"{prefix}delta_", 1) for c in R.columns]
+    return R.join(D)

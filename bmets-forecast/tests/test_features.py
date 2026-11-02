@@ -50,3 +50,19 @@ def test_simple_radiomics_keys(tmp_path):
     f2 = radiomics_features(vols, np.zeros_like(seg), seqs=("t1c", "t2f", "adc"), backend="simple")
     assert set(f1) == set(f2) and len(f1) > 20
     assert f1["shape_tc_volume_cc"] > 0 and np.isnan(f2["t1c_tc_mean"])
+
+
+def test_delta_radiomics_columns():
+    from bmf.features.tables import add_deltas
+    idx = pd.MultiIndex.from_tuples([("A", 1), ("A", 2), ("A", 3), ("B", 1)], names=["case_id", "t"])
+    R = pd.DataFrame({"rad_x": [1.0, 3.0, 2.0, 5.0]}, index=idx)
+    D = add_deltas(R)
+    assert list(D.columns) == ["rad_x", "rad_delta_x"]
+    assert D.rad_delta_x.tolist() == [0.0, 2.0, -1.0, 0.0]
+
+
+def test_radiomics_failure_returns_empty(caplog):
+    from bmf.features.radiomics import radiomics_or_empty
+    seg = np.zeros((8, 8, 8), np.int16); seg[2:6, 2:6, 2:6] = 3
+    out = radiomics_or_empty({"t1c": np.zeros((8, 8, 8), np.float32)}, seg, ("t1c",), backend="does-not-exist", study="S1")
+    assert out == {} and "S1" in caplog.text

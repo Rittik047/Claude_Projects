@@ -97,3 +97,15 @@ def _pyradiomics(vols, seg, seqs, spacing):  # pragma: no cover - optional depen
                 if not k.startswith("diagnostics"):
                     out[f"{s}_{r}_{k}"] = float(v)
     return out
+
+
+def radiomics_or_empty(vols, seg, seqs, backend="pyradiomics", study="?", **kw) -> dict:
+    """Per-study guard for the real run: one failing mask/image logs a warning and yields NaNs, not a crash."""
+    import logging
+    try:
+        if backend not in ("simple", "pyradiomics"):
+            raise ValueError(f"unknown radiomics backend {backend}")
+        return radiomics_features(vols, seg, seqs, backend=backend, **kw)
+    except Exception as e:  # noqa: BLE001
+        logging.getLogger("bmf").warning("radiomics failed for %s: %s", study, e)
+        return {}

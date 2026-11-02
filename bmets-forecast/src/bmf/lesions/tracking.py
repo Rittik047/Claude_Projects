@@ -13,7 +13,8 @@ def match(prev: pd.DataFrame, curr: pd.DataFrame, gate_mm: float = 10.0) -> list
         P = prev[["cx", "cy", "cz"]].to_numpy(float)
         C = curr[["cx", "cy", "cz"]].to_numpy(float)
         D = np.linalg.norm(P[:, None, :] - C[None, :, :], axis=-1)
-        for i, j in zip(*linear_sum_assignment(D)):
+        BIG = 1e6                                      # gate BEFORE assignment, so far pairs never displace near ones
+        for i, j in zip(*linear_sum_assignment(np.where(D <= gate_mm, D, BIG))):
             if D[i, j] <= gate_mm:
                 pairs.append((prev.lesion_id.iloc[i], curr.lesion_id.iloc[j]))
                 used_p.add(prev.lesion_id.iloc[i]); used_c.add(curr.lesion_id.iloc[j])

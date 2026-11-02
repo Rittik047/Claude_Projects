@@ -6,7 +6,5 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/%x_%A_%a.out
 source "${BMF_HOME:-$HOME/Claude_Projects/bmets-forecast}/juno/00_env.sh"
-if [ "${SLURM_ARRAY_TASK_ID:-0}" = "0" ]; then bmf audit --config "$BMF_CONFIG"; fi
-bmf index --config "$BMF_CONFIG"
-bmf splits --config "$BMF_CONFIG"
+# index/splits are written once by 01b_index.sbatch (dependency in run_all.sh); this array only reads them
 bmf preprocess --config "$BMF_CONFIG" --shard "${SLURM_ARRAY_TASK_ID}/32"

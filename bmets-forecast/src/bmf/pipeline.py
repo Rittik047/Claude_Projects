@@ -172,20 +172,20 @@ def stage_labels(c: Ctx, **_):
 
 
 def stage_features(c: Ctx, **_):
-    from .features.radiomics import load_pp_study, radiomics_features
-    from .features.tables import clinical_design, lesion_summary
+    from .features.radiomics import load_pp_study, radiomics_or_empty
+    from .features.tables import add_deltas, clinical_design, lesion_summary
     clin, tp = c.clin(), c.tp()
     iv = intervals(clin)
     X = clinical_design(clin, iv).join(lesion_summary(_per_tp(c), pd.read_csv(c.cache / "tracks.csv"), clin, iv))
     backend = c.cfg.get("radiomics_backend", "pyradiomics")
     sid = tp[~tp.is_normal].set_index(["case_id", "post_idx"]).study_id
     rad = {}
-    for (cid, t) in X.index:
+    for (cid, t) in X.index:                         # radiomics at t; deltas vs t-1 (t-1 is always an earlier interval start)
         vols, seg = load_pp_study(c.pp(sid[(cid, t)]), ("t1c", "t2f", "adc"))
-        rad[(cid, t)] = radiomics_features(vols, seg, ("t1c", "t2f", "adc"), backend=backend)
-    R = pd.DataFrame.from_dict(rad, orient="index"); R.index.names = ["case_id", "t"]
+        rad[(cid, t)] = radiomics_or_empty(vols, seg, ("t1c", "t2f", "adc"), backend=backend, study=sid[(cid, t)])
+    R = pd.DataFrame.from_dict(rad, orient="index"); R.index = pd.MultiIndex.from_tuples(R.index, names=["case_id", "t"])
     R.columns = [f"rad_{k}" for k in R.columns]
-    X.join(R).to_csv(c.cache / "features_t2.csv")
+    X.join(add_deltas(R)).to_csv(c.cache / "features_t2.csv")
 
 
 def stage_embed(c: Ctx, encoder: str | None = None, device: str = "cpu", **_):

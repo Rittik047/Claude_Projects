@@ -74,8 +74,7 @@ class TemporalModel:
         self.model = TemporalTransformer(S.shape[-1], n_clin=C.shape[1], **self.kw).to(self.device)
         yt = torch.tensor(np.asarray(y, np.float32))
         if self.task == "binary":
-            pw = ((1 - yt.mean()) / yt.mean().clamp(min=1e-3)).detach()
-            loss_fn = nn.BCEWithLogitsLoss(pos_weight=pw)
+            loss_fn = nn.BCEWithLogitsLoss()           # unweighted: keeps probabilities calibrated
         else:
             loss_fn = nn.MSELoss()
         opt = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=self.wd)

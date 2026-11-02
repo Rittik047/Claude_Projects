@@ -4,7 +4,8 @@ set -euo pipefail
 source "$(dirname "$0")/00_env.sh"
 cd "$BMF_SCRATCH"
 sub() { sbatch --parsable -p "$1" "${@:2}"; }
-J1=$(sub "$JUNO_PARTITION_CPU" "$BMF_HOME/juno/02_preprocess.sbatch")
+J0=$(sub "$JUNO_PARTITION_CPU" "$BMF_HOME/juno/01b_index.sbatch")
+J1=$(sub "$JUNO_PARTITION_CPU" --dependency=afterok:$J0 "$BMF_HOME/juno/02_preprocess.sbatch")
 J2=$(sub "$JUNO_PARTITION_CPU" --dependency=afterok:$J1 "$BMF_HOME/juno/03a_seg_export.sbatch")
 J3=$(sub "$JUNO_PARTITION_GPU" --dependency=afterok:$J2 "$BMF_HOME/juno/03_seg_train.sbatch")
 J4=$(sub "$JUNO_PARTITION_CPU" --dependency=afterok:$J3 "$BMF_HOME/juno/03b_seg_eval.sbatch")

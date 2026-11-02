@@ -16,13 +16,16 @@ def cox_cv(X: pd.DataFrame, surv: pd.DataFrame, splits: dict, penalizer: float =
         mu, sd = X[tr][keep].mean(), X[tr][keep].std()
         Z = ((X[keep] - mu) / sd).fillna(0)
         from lifelines.exceptions import ConvergenceError
+        cph = None
         for pen in (penalizer, penalizer * 10, penalizer * 100):
             try:
                 cph = CoxPHFitter(penalizer=pen)
                 cph.fit(Z[tr].join(surv[["time_years", "event"]]), "time_years", "event")
                 break
             except ConvergenceError:
-                continue
+                cph = None
+        if cph is None:
+            raise RuntimeError(f"Cox model did not converge in fold {k} even with penalizer {penalizer * 100}")
         out.append(pd.DataFrame({"risk": cph.predict_partial_hazard(Z[te]).to_numpy().ravel(), "fold": k}, index=X.index[te]))
     return pd.concat(out)
 

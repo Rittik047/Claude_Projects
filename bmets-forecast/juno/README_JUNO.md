@@ -35,7 +35,7 @@ Download into `$BMF_SCRATCH/weights/`, using the file names in `configs/juno.yam
 ## 3. Run
 
 ```bash
-bash juno/run_all.sh          # submits 02 -> 03a -> 03 (10 GPU array jobs) -> 03b, 04 -> 05 -> 06 with dependencies
+bash juno/run_all.sh          # submits 01b (index, once) -> 02 -> 03a -> 03 (10 GPU array jobs) -> 03b, 04 -> 05 -> 06 with dependencies
 squeue -u $USER               # monitor; logs in $BMF_SCRATCH/logs
 ```
 

@@ -44,3 +44,23 @@ def test_colab_notebooks_valid():
             assert s in VALID, (p.name, s)
             used.add(s)
     assert {"audit", "preprocess", "embed", "train", "figures"} <= used
+
+
+def test_juno_shared_files_written_once():
+    # review finding: 32 array tasks rewrote index.csv/splits.json concurrently
+    arr = (ROOT / "juno" / "02_preprocess.sbatch").read_text()
+    assert "bmf index" not in arr and "bmf splits" not in arr and "bmf audit" not in arr
+    once = (ROOT / "juno" / "01b_index.sbatch").read_text()
+    assert all(f"bmf {s}" in once for s in ("audit", "index", "splits"))
+    runall = (ROOT / "juno" / "run_all.sh").read_text()
+    assert "01b_index.sbatch" in runall and "afterok:$J0" in runall
+
+
+def test_no_source_file_is_gitignored():
+    """CI imports from a fresh clone: every module under src/ must be trackable."""
+    import subprocess
+    root = Path(__file__).parents[1]
+    files = [str(p.relative_to(root)) for p in (root / "src").rglob("*.py")]
+    r = subprocess.run(["git", "check-ignore", "--no-index", *files], cwd=root,
+                       capture_output=True, text=True)
+    assert r.stdout.strip() == "", f"gitignored source files:\n{r.stdout}"

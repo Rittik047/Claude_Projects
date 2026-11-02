@@ -94,3 +94,30 @@ def test_deepsurv_cindex_signal():
     X, s, sp = _surv()
     oof = deepsurv_cv(X, s, sp, epochs=200)
     assert concordance_index(s.loc[oof.index, "time_years"], -oof.risk, s.loc[oof.index, "event"]) > 0.7
+
+
+def test_p0_p1_probabilities_calibrated_on_imbalanced():
+    # review finding: class weighting shifted probabilities toward 0.5 (calibration-in-the-large off)
+    from bmf.eval.stats import calibration
+    rng = np.random.default_rng(3)
+    rows = []
+    for i in range(300):
+        for t in (1, 2):
+            x = rng.normal(size=3)
+            rows.append({"case_id": f"P{i:03d}", "t": t, "a": x[0], "b": x[1], "c": x[2],
+                         "y": int(rng.random() < 1 / (1 + np.exp(-(x[0] - 2.5))))})
+    df = pd.DataFrame(rows).set_index(["case_id", "t"])
+    sp = {f"P{i:03d}": i % 5 for i in range(300)}
+    for m in ("P0", "P1"):
+        oof = run_cv(m, df.drop(columns="y"), df["y"], sp)
+        assert abs(oof.pred.mean() - oof.y.mean()) < 0.04, m
+        assert abs(calibration(oof.y, oof.pred)["intercept"]) < 0.5, m
+
+
+def test_cox_raises_clear_error_when_no_fit(monkeypatch):
+    from lifelines import CoxPHFitter
+    from lifelines.exceptions import ConvergenceError
+    X, s, sp = _surv()
+    monkeypatch.setattr(CoxPHFitter, "fit", lambda *a, **k: (_ for _ in ()).throw(ConvergenceError("x")))
+    with pytest.raises(RuntimeError, match="Cox"):
+        cox_cv(X, s, sp)

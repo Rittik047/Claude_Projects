@@ -115,3 +115,11 @@ def test_synth_truth_recovered(tmp_path):
     truth = out["truth"]
     want = {(c, int(t)) for c, t in truth[truth.is_new][["case_id", "t"]].itertuples(index=False)}
     assert found == want
+
+
+def test_match_gate_before_assignment():
+    # review finding: ungated Hungarian picked far pairs (49 < 51) and then rejected both
+    prev = pd.DataFrame({"lesion_id": [1, 2], "cx": [0.0, 20.0], "cy": [0.0, 0.0], "cz": [0.0, 0.0]})
+    curr = pd.DataFrame({"lesion_id": [7, 8], "cx": [1.0, -30.0], "cy": [0.0, 0.0], "cz": [0.0, 0.0]})
+    pairs = match(prev, curr, gate_mm=10.0)
+    assert (1, 7) in pairs and (None, 8) in pairs and (2, None) in pairs
