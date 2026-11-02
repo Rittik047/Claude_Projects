@@ -1,6 +1,6 @@
 # bmets-forecast — design spec
 
-**Date:** 2026-11-02 · **Status:** awaiting spec review
+**Date:** 2026-11-02 · **Status:** approved 2026-11-02
 **Author:** Rittik Patra (solo first author) · **Target:** npj Digital Medicine (stretch: Nature Communications)
 
 ## 1. Intent
@@ -13,7 +13,7 @@
 - **T1:** automatic segmentation and lesion tracking.
 - **T2 (headline):** next-scan intracranial progression and new metastases.
 - **T3:** lesion-level volume trajectories.
-- **Proposed addition, T4:** overall survival. The data contain 153 deaths; see §11, Q1.
+- **T4 (secondary):** overall survival, using the 153 deaths in the data.
 
 **Non-goals:** treatment-effect (causal) claims, or a clinical deployment claim.
 
@@ -55,7 +55,7 @@ All labels are derived from the segmentations. Lesions are tracked across time p
 | **T2a Intracranial progression** | Interval (≤748) | Volumetric RANO-BM progression at t+1: sum of target enhancing-lesion volumes ≥ +73% vs. nadir, **or** any new lesion ≥ 0.05 cc | AUROC, AUPRC, calibration, net benefit |
 | **T2b New metastases (distant brain failure)** | Interval | ≥1 new enhancing lesion at t+1 not matched to any lesion at t | Same |
 | T3 Lesion trajectory | Lesion × interval | log-ratio of enhancing volume at t+1 vs. t; response class (complete response, partial response ≤ −65%, stable, progression ≥ +73%, volumetric thresholds) | MAE, Spearman ρ, ordinal C-index, interval coverage |
-| T4 Overall survival (proposed) | Patient (300; 153 events) | Time from first post-diagnosis MRI to death; censored at the last MRI | Harrell's and Uno's C-index, time-dependent AUC at 6 and 12 months, integrated Brier score |
+| T4 Overall survival (secondary) | Patient (300; 153 events) | Time from first post-diagnosis MRI to death; censored at the last MRI | Harrell's and Uno's C-index, time-dependent AUC at 6 and 12 months, integrated Brier score |
 
 **Inputs for T2 and T3** at interval t → t+1:
 - MRI at t, plus all earlier scans;
@@ -208,5 +208,5 @@ bmets-forecast/
 
 ## 11. Open questions
 
-1. Promote T4 (overall survival, 153 events) to a co-primary endpoint alongside T2? This is recommended, because survival is the most robust label in the data.
+1. ~~Promote T4 to co-primary?~~ Decided: T4 stays secondary.
 2. Confirm the label scheme on the first downloaded segmentation file.
