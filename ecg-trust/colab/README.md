@@ -17,7 +17,7 @@ Open it in Colab:
 
 | | |
 |---|---|
-| Google Drive space | about 10 GB: 6.3 GB of data zips, 3.1 GB of caches, about 0.2 GB per run of outputs |
+| Google Drive space | about 10 GB: 6.3 GB of data zips, 3.0 GB of caches, about 0.2 GB per run of outputs |
 | Colab runtime | **G4** GPU if your plan offers it. T4, L4 and A100 also work: the code picks up any CUDA device. |
 | Time, first session | about 1–1.5 h, including the one-off data download |
 | Time, later sessions | about 25–40 min, because the caches are read from Drive |
@@ -93,7 +93,7 @@ Check the settings cell, then choose **Runtime → Run all**. Authorise Drive wh
 | `DRIVE_ROOT` | `/content/drive/MyDrive/ecg-trust` | the folder from Step 1 |
 | `BRANCH` | `claude/beautiful-carson-3col06` | code version to run |
 | `DOWNLOAD_IF_MISSING` | `True` | Option A |
-| `SAVE_CACHE_TO_DRIVE` | `True` | keep the caches (3.1 GB) on Drive so later runs skip unzipping and preprocessing |
+| `SAVE_CACHE_TO_DRIVE` | `True` | keep the caches (3.0 GB) on Drive so later runs skip unzipping and preprocessing |
 | `RUN_EXTERNAL` | `True` | external validation; `False` skips the 5.4 GB dataset |
 | `BUILD_GUIDE` | `True` | render the PDF guide (installs headless Chromium, about 2 min) |
 | `N_BOOT` | `2000` | bootstrap resamples; lower it (e.g. 200) for a quick trial run |
@@ -143,5 +143,5 @@ Results are copied after every stage. If Colab disconnects, everything finished 
   - To force CPU, add `os.environ["ECGTRUST_DEVICE"] = "cpu"` to the settings cell.
 - **Freeze and test lock.** Each notebook run makes its own freeze. Each test set can be evaluated once per model per run. A second call in the same session is refused; pass `--rerun-reason "..."` to repeat it on purpose, and the reason is logged.
 - **Disconnects and limits.** Free-tier sessions can time out. Re-run from the top: the data and caches come back from Drive in a few minutes. If you are short of time, set `RUN_EXTERNAL = False` and `N_BOOT = 200` for a trial.
-- **Drive quota.** If Drive is nearly full, set `SAVE_CACHE_TO_DRIVE = False`. That saves 3.1 GB, at the cost of rebuilding the caches each session (about 5 min).
+- **Drive quota.** If Drive is nearly full, set `SAVE_CACHE_TO_DRIVE = False`. That saves 3.0 GB, at the cost of rebuilding the caches each session (about 5 min).
 - **Not a medical device.** This is research software and must not be used for diagnosis.

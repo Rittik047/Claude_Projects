@@ -314,6 +314,7 @@
   <pre>pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[serve,dev]"
 ecgtrust download --dataset ptbxl && ecgtrust download --dataset ptbxl_plus && ecgtrust download --dataset external
+ecgtrust prepare                        # splits + 100 Hz caches
 ecgtrust audit
 ecgtrust train --model baseline --features 12sl
 ecgtrust train --model resnet --seeds 0 1 2

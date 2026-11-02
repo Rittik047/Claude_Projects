@@ -77,6 +77,10 @@ ecgtrust download --dataset ptbxl        # then ptbxl_plus and external; ~10 GB,
 ```
 
 ```bash
+ecgtrust prepare                       # splits + 100 Hz signal caches
+```
+
+```bash
 ecgtrust audit
 ```
 
