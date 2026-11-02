@@ -1,0 +1,5 @@
+ecg_id,statements
+1,"['NSR', 'NML']"
+2,"['SR', 'NML', 'LVH2']"
+3,"['AFIB', 'RBBB', 'AB']"
+4,"['SBRAD', 'IMI', 'NST']"

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ecg-trust — project guide</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  :root {
+    --ink: #1f2a44; --muted: #5d6b82; --line: #dfe4ec; --accent: #0072B2; --accent2: #D55E00;
+    --soft: #f3f6fa; --ok: #009E73; --warn: #E69F00;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", "DejaVu Sans", sans-serif; color: var(--ink); font-size: 10.2pt;
+         line-height: 1.5; margin: 0; }
+  h1, h2, h3 { font-family: "Inter Display", "Inter", sans-serif; letter-spacing: -0.01em; }
+  h1 { font-size: 22pt; margin: 0 0 4mm; }
+  h2 { font-size: 15pt; color: var(--accent); border-bottom: 2px solid var(--line);
+       padding-bottom: 2mm; margin: 0 0 4mm; }
+  h3 { font-size: 11.5pt; margin: 6mm 0 2mm; }
+  p { margin: 0 0 3mm; text-align: justify; hyphens: auto; }
+  .section { page-break-before: always; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.6pt; }
+  code, .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8.6pt; background: var(--soft);
+                padding: 0 1.2mm; border-radius: 1mm; }
+  pre { font-family: "DejaVu Sans Mono", monospace; font-size: 8.2pt; background: #0f1b33; color: #e8eef9;
+        padding: 3mm 4mm; border-radius: 2mm; white-space: pre-wrap; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 8.8pt; }
+  th { background: var(--soft); text-align: left; font-weight: 600; }
+  th, td { border-bottom: 1px solid var(--line); padding: 1.6mm 2mm; vertical-align: top; }
+  figure { margin: 3mm 0 5mm; text-align: center; page-break-inside: avoid; }
+  figure img { max-width: 100%; max-height: 105mm; }
+  figcaption { font-size: 8.6pt; color: var(--muted); margin-top: 1.5mm; text-align: left; }
+  .pending { border: 1.5px dashed var(--line); border-radius: 2mm; padding: 8mm; color: var(--muted);
+             text-align: center; font-size: 9pt; }
+  .callout { background: var(--soft); border-left: 3.5px solid var(--accent); padding: 3mm 4mm;
+             border-radius: 0 2mm 2mm 0; margin: 3mm 0 4mm; page-break-inside: avoid; }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout b:first-child { color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 5mm 0; }
+  .kpi { background: var(--soft); border-radius: 2.5mm; padding: 4mm; }
+  .kpi .v { font-size: 17pt; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .kpi .l { font-size: 8pt; color: var(--muted); margin-top: 1mm; }
+  .cover { height: 255mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .cover .band { background: linear-gradient(135deg, #0f1b33 0%, #0072B2 100%); color: white;
+                 border-radius: 4mm; padding: 16mm 12mm; }
+  .cover h1 { color: white; font-size: 30pt; }
+  .cover .sub { font-size: 13pt; opacity: 0.9; max-width: 150mm; }
+  .tag { display: inline-block; border: 1px solid rgba(255,255,255,0.5); border-radius: 10mm;
+         padding: 0.8mm 3mm; font-size: 8pt; margin: 4mm 1.5mm 0 0; }
+  .flow { display: flex; align-items: stretch; gap: 2mm; margin: 4mm 0 5mm; }
+  .flow div { flex: 1; background: var(--soft); border-radius: 2mm; padding: 2.5mm; font-size: 8.2pt;
+              border-top: 3px solid var(--accent); }
+  .flow div b { display: block; font-size: 8.8pt; margin-bottom: 1mm; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .toc li { margin: 1mm 0; }
+  .formula { text-align: center; font-family: "DejaVu Serif", serif; font-size: 10.5pt; margin: 3mm 0; }
+  ol.refs li { font-size: 8.4pt; margin-bottom: 1.2mm; }
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────────── COVER ───────────────────────────── -->
+<div class="cover">
+  <div class="band">
+    <div class="small" style="opacity:.8;letter-spacing:.12em">PROJECT GUIDE · 2026-11-01</div>
+    <h1>ecg-trust</h1>
+    <div class="sub">A 12-lead ECG classifier that ships with evidence for <i>when it can be trusted</i>:
+      patient-level evaluation, calibration, calibrated abstention, subgroup and noise
+      robustness, external validation, and a comparison with a commercial algorithm.</div>
+    <span class="tag">PTB-XL · 21,799 ECGs</span><span class="tag">External · 28,646 ECGs</span>
+    <span class="tag">PyTorch · CPU</span><span class="tag">Conformal prediction</span>
+  </div>
+  <div>
+    <div class="grid">
+      <div class="kpi"><div class="v">pending</div><div class="l">macro-AUROC, internal test (95% CI pending)</div></div>
+      <div class="kpi"><div class="v">pending</div><div class="l">macro-AUROC, external validation (95% CI pending)</div></div>
+      <div class="kpi"><div class="v">pending</div><div class="l">macro ECE on test, before → after temperature scaling</div></div>
+      <div class="kpi"><div class="v">pending</div><div class="l">ECGs referred at α = 0.10 (internal test)</div></div>
+    </div>
+    <p class="muted small">Author: Rittik Patra. Research software — <b>not a medical device</b> and not for
+      diagnostic use. All numbers in this guide are read from the saved, version-controlled reports in
+      <code>ecg-trust/reports/</code>; none are typed by hand.</p>
+  </div>
+</div>
+
+<!-- ───────────────────────────── CONTENTS / SUMMARY ───────────────────────────── -->
+<div class="section">
+  <h2>Contents</h2>
+  <ol class="toc">
+    <li>Executive summary</li><li>Objective and motivation</li><li>Plan and decision log</li>
+    <li>Data</li><li>Methods</li><li>Results</li><li>Limitations and non-claims</li>
+    <li>Reproducibility</li><li>References</li>
+  </ol>
+  <h2 style="margin-top:8mm">1 · Executive summary</h2>
+  <p>Most ECG deep-learning portfolios stop at one number: the AUROC on a held-out split. A clinical
+    team deciding whether to deploy a model needs more: are the probabilities honest, can the model say
+    "I don't know", does it hold up on noisy recordings, on other hospitals and on patient subgroups,
+    and is it better than the interpretation software already built into the ECG cart? This project
+    answers those questions for a five-class 12-lead ECG classifier trained on PTB-XL.</p>
+  <div class="callout"><b>Headline.</b> Final test and external results are pending the locked evaluation runs.</div>
+  <table>
+    <tr><th>Question</th><th>How it is answered</th><th>Result</th></tr>
+    <tr><td>Does it rank cases well?</td><td>Patient-bootstrap AUROC, internal test</td><td>pending</td></tr><tr><td>Are probabilities honest?</td><td>ECE before → after temperature scaling</td><td>pending</td></tr><tr><td>Can it say &#39;I don&#39;t know&#39;?</td><td>Label-conditional conformal refer rate, α = 0.10</td><td>pending</td></tr><tr><td>Does it transfer?</td><td>External database, strict label map</td><td>pending</td></tr><tr><td>Is it robust to noise?</td><td>Synthetic noise at exact SNR; refer rate vs SNR</td><td>see §6.4</td></tr><tr><td>Better than the cart software?</td><td>Sensitivity at GE 12SL&#39;s specificity</td><td>see §6.7</td></tr>
+  </table>
+</div>
+
+<!-- ───────────────────────────── OBJECTIVE ───────────────────────────── -->
+<div class="section">
+  <h2>2 · Objective and motivation</h2>
+  <p><b>Objective.</b> Build, evaluate and serve a classifier for the five PTB-XL diagnostic
+    superclasses — normal ECG (NORM), myocardial infarction (MI), ST/T change (STTC), conduction
+    disturbance (CD) and hypertrophy (HYP) — from 10-second, 12-lead ECGs, and produce evidence for
+    when its output can be trusted.</p>
+  <p><b>Why trust is the product.</b> A diagnostic-support model is only useful if a clinician can act on
+    its output. Three properties matter as much as ranking performance. <i>Calibration</i>: a predicted
+    70 % should be right about 70 % of the time, otherwise thresholds and risk communication break.
+    <i>Abstention</i>: on ambiguous or poor-quality recordings the model should refer to a cardiologist
+    instead of guessing. <i>Transportability</i>: performance on a different population, device and
+    labelling process is usually lower; the size of the drop must be measured, not assumed.</p>
+  <p><b>Scope.</b> Multi-label classification at 100 Hz. The 500 Hz recordings, the 71 individual
+    statements, new architectures and clinical thresholds are out of scope. Compute is a 4-core CPU
+    container, so models are deliberately compact.</p>
+  <h3>What a reader should take from this project</h3>
+  <div class="flow">
+    <div><b>Data rigour</b>Checksum-verified downloads, audited labels, patient-level splits with an automated leakage test.</div>
+    <div><b>Honest evaluation</b>One-shot, locked test set; patient-bootstrap CIs; an external dataset from another country.</div>
+    <div><b>Trust layer</b>Temperature scaling and per-class conformal "present / absent / refer" decisions.</div>
+    <div><b>Engineering</b>Tested package, CLI, CI, FastAPI service, Streamlit demo, Docker, model card.</div>
+  </div>
+</div>
+
+<!-- ───────────────────────────── PLAN ───────────────────────────── -->
+<div class="section">
+  <h2>3 · Plan and decision log</h2>
+  <p>The project followed a written design specification and a 24-task, test-driven implementation
+    plan with four milestones. Each milestone ended at a review gate with the author.</p>
+  <table>
+    <tr><th>Milestone</th><th>Deliverable</th><th>Gate</th></tr>
+    <tr><td>M1 · Data</td><td>Downloader, labels, splits, signal caches, external loader, feature baseline, data audit</td><td>Audit and label-map review</td></tr>
+    <tr><td>M2 · Models</td><td>1-D ResNet, 3-seed ensemble, calibration, conformal, robustness, 12SL comparator — validation data only</td><td>Freeze: models, thresholds and maps hashed</td></tr>
+    <tr><td>M3 · Final evaluation</td><td>Single logged run on the internal test fold and on the external set</td><td>Results review</td></tr>
+    <tr><td>M4 · Product</td><td>API, demo, Docker, CI, model card, README, this guide</td><td>Portfolio-ready</td></tr>
+  </table>
+  <h3>Decisions taken during the project</h3>
+  <table>
+    <tr><th>Decision</th><th>Why</th></tr>
+    <tr><td>PhysioNet AWS open-data mirror, every file SHA-256-verified, resumable downloads</td><td>physionet.org was not reachable; the proxy cut long transfers</td></tr><tr><td>Patient-level split of fold 9 into model-selection and calibration halves</td><td>conformal guarantees need calibration data unused for training or tuning</td></tr><tr><td>External label map completed to all 94 SNOMED codes; strict PTB-XL-faithful primary map, liberal map as sensitivity analysis</td><td>the dataset&#39;s condition list missed 43 codes, incl. complete RBBB and LBBB; PTB-XL treats isolated ST/T findings as form statements</td></tr><tr><td>NORM proxy = sinus-family rhythms only; unlabelled external records excluded</td><td>mirrors PTB-XL, where sinus bradycardia can be a normal ECG</td></tr><tr><td>1-D ResNet width 64 (1.49 M parameters), 3 seeds</td><td>author&#39;s choice after a CPU timing benchmark</td></tr><tr><td>Synthetic, SNR-exact noise instead of NSTDB records</td><td>NSTDB was not on the reachable mirror</td></tr><tr><td>GE 12SL map built from statement names cross-checked with PTB-XL+ SNOMED concepts; ambiguous statements unmapped</td><td>keeps the commercial comparison conservative</td></tr><tr><td>Freeze manifest + single-use test log</td><td>prevents tuning on the test sets</td></tr>
+  </table>
+</div>
+
+<!-- ───────────────────────────── DATA ───────────────────────────── -->
+<div class="section">
+  <h2>4 · Data</h2>
+  <table>
+    <tr><th>Dataset</th><th>Role</th><th>Size</th></tr>
+    <tr><td>PTB-XL 1.0.3 (Wagner et al., 2020)</td><td>Training, validation, internal test</td><td>21,799 ECGs, 18,869 patients, 10 s, 12 leads</td></tr>
+    <tr><td>PTB-XL+ 1.0.1 (Strodthoff et al., 2023)</td><td>Feature baseline; GE 12SL machine statements</td><td>ECG measurements from GE 12SL, Glasgow Uni-G and ECGDeli</td></tr>
+    <tr><td>Large-scale 12-lead arrhythmia database 1.0.0 (Zheng et al., 2022)</td><td>External validation</td><td>45,152 ECGs from Chapman University / Shaoxing / Ningbo hospitals; 28,646 evaluated</td></tr>
+  </table>
+  <p>All files were downloaded from the PhysioNet open-data mirror and verified against the published
+    SHA-256 checksums (134,363 files, 6.2 GB, zero failures). Labels follow the published benchmark
+    convention: a superclass is positive if any diagnostic SCP statement maps to it.
+    411 PTB-XL records have no diagnostic superclass and are excluded.</p>
+  <figure><img src="fig/prevalence.png"><figcaption>Label prevalence. The external set is dominated by sinus-rhythm-only ECGs (the NORM proxy) and has very few MI labels — a large, deliberate dataset shift.</figcaption></figure>
+  <div class="two">
+    <div><figure><img src="fig/validation.png"><figcaption>Share of labels validated by a cardiologist per PTB-XL fold. Evaluation folds are cleaner than training folds.</figcaption></figure></div>
+    <div><h3>Splits (patient-level)</h3>
+      <table><tr><td>train</td><td>17,084 records</td></tr><tr><td>val_select</td><td>1,072 records</td></tr><tr><td>val_calib</td><td>1,074 records</td></tr><tr><td>test</td><td>2,158 records</td></tr></table>
+      <p class="small muted">Folds 1–8 train; fold 9 split by patient into model selection and calibration halves; fold 10 is the
+        locked test set. No patient appears in two splits (checked by a unit test and at run time).</p></div>
+  </div>
+  <h3>Harmonising the external labels</h3>
+  <p>The external database codes diagnoses in SNOMED CT; 43 of the 94 codes present in its records were
+    missing from its own condition list and were identified from the PhysioNet/CinC Challenge 2021
+    mapping. The primary map is strict and PTB-XL-faithful: isolated ST/T-wave findings and voltage-only
+    LVH criteria are <i>form</i> statements in PTB-XL and are therefore not mapped. A liberal map that
+    includes them is reported as a sensitivity analysis. NORM is a proxy (sinus-family rhythm codes only),
+    and records without any superclass are excluded, exactly as in PTB-XL.</p>
+</div>
+
+<!-- ───────────────────────────── METHODS ───────────────────────────── -->
+<div class="section">
+  <h2>5 · Methods</h2>
+  <div class="flow">
+    <div><b>1 · Signals</b>100 Hz, 12 × 1000, mV; per-lead standardisation fitted on train only.</div>
+    <div><b>2 · Models</b>Gradient boosting on PTB-XL+ features; compact 1-D ResNet × 3 seeds.</div>
+    <div><b>3 · Calibration</b>Per-class temperature fitted on the calibration half of fold 9.</div>
+    <div><b>4 · Abstention</b>Per-class Mondrian conformal sets → present / absent / refer.</div>
+    <div><b>5 · Evaluation</b>Locked one-shot test and external runs, bootstrap CIs, subgroups, noise.</div>
+  </div>
+  <h3>Models</h3>
+  <p><b>Feature baseline.</b> One histogram gradient-boosting classifier per class on 757 GE 12SL
+    measurements (intervals, amplitudes, axes), with ECGDeli features as an open-source alternative.
+    <b>Deep model.</b> A 1-D ResNet (width 64, stages [2, 2, 2, 2], kernel 7) trained with AdamW, one-cycle learning rate and early stopping
+    on validation macro-AUROC; three seeds are averaged as a deep ensemble (Lakshminarayanan et al., 2017).</p>
+  <h3>Calibration</h3>
+  <p>For each class a single temperature <i>T</i> rescales every member's logit before averaging:
+    <span class="mono">p = mean<sub>m</sub> σ(z<sub>m</sub> / T)</span>, with <i>T</i> chosen to minimise
+    the negative log-likelihood on the calibration split (Guo et al., 2017). Calibration is measured with
+    the expected calibration error (15 equal-mass bins), Brier score and reliability diagrams.</p>
+  <h3>Conformal abstention</h3>
+  <p>For each class, non-conformity scores are 1 − p for positive and p for negative calibration ECGs, and each
+    label value gets its own finite-sample quantile (label-conditional, "Mondrian" split conformal;
+    Vovk et al., 2005; Angelopoulos &amp; Bates, 2021):</p>
+  <div class="formula">q̂<sub>y</sub> = the ⌈(n<sub>y</sub> + 1)(1 − α)⌉-th smallest score among calibration ECGs with label y</div>
+  <p>A new ECG's set contains "present" if 1 − p ≤ q̂<sub>1</sub> and "absent" if p ≤ q̂<sub>0</sub>. A
+    single-element set is a decision; otherwise the ECG is referred. Under exchangeability the true
+    label is covered with probability ≥ 1 − α separately for positives and negatives.</p>
+  <div class="callout warn"><b>Caveat.</b> The guarantee is marginal and assumes new data look like the calibration
+    data. The external set violates this on purpose; its coverage is reported to show by how much.</div>
+  <h3>Robustness, subgroups and comparator</h3>
+  <p>Synthetic noise mimicking the MIT-BIH Noise Stress Test types (baseline wander below 0.5 Hz, EMG-like
+    20–45 Hz, electrode-motion steps and bursts) is added at exact per-lead SNRs from 24 to −6 dB, plus
+    lead dropout. Subgroups (sex, age band, device, PTB-XL noise flags, pacemaker) are descriptive, with
+    patient-bootstrap CIs; groups with fewer than 30 positives or negatives are marked insufficient. The
+    GE 12SL comparison uses 12SL's own operating point: the model's sensitivity is read at 12SL's
+    specificity on the same ECGs, using a published statement-to-superclass map.</p>
+</div>
+
+<!-- ───────────────────────────── RESULTS ───────────────────────────── -->
+<div class="section">
+  <h2>6 · Results</h2>
+  <h3>6.1 Model selection (validation data only)</h3>
+  <figure><img src="fig/model_selection.png"><figcaption>All modelling choices were made on val_select before the freeze. Points are macro-AUROC; bars are patient-bootstrap 95% CIs.</figcaption></figure>
+  <h3>6.2 Internal test (PTB-XL fold 10, single locked run)</h3>
+  <div class="pending">Internal test results appear here after the single locked test run.</div>
+  <div class="two">
+    <div><div class="pending">Figure pending: ROC curves on the internal test fold.</div></div>
+    <div><div class="pending">Figure pending: Reliability after temperature scaling.</div></div>
+  </div>
+  <div class="pending">Figure pending: Reliability before scaling, for comparison.</div>
+</div>
+
+<div class="section">
+  <h3>6.3 Calibrated abstention</h3>
+  <div class="pending">Conformal coverage and refer rates appear here after the test run.</div>
+  <h3>6.4 Robustness to noise</h3>
+  <div class="pending">Figure pending: Macro-AUROC and conformal refer rate as synthetic noise increases (left to right). A trustworthy system should refer more ECGs as quality falls.</div>
+  <h3>6.5 Which leads matter</h3>
+  <div class="pending">Figure pending: AUROC drop when a single lead is zeroed. Descriptive only — not a mechanism.</div>
+</div>
+
+<div class="section">
+  <h3>6.6 Subgroups</h3>
+  <div class="pending">Figure pending: Descriptive subgroup AUROCs with patient-bootstrap 95% CIs (internal test). Differences are only noted when intervals do not overlap.</div>
+  <h3>6.7 Comparison with GE 12SL</h3>
+  <div class="pending">Figure pending: Model sensitivity at 12SL's own specificity on the same test ECGs. Indicative: depends on the published statement map.</div>
+  <h3>6.8 External validation</h3>
+  <div class="pending">External results appear here after the single locked external run.</div>
+  <div class="pending">Figure pending: Per-class AUROC and calibration error, internal test vs external validation.</div>
+</div>
+
+<!-- ───────────────────────────── LIMITATIONS ───────────────────────────── -->
+<div class="section">
+  <h2>7 · Limitations and non-claims</h2>
+  <ul>
+    <li><b>Not a medical device.</b> The model is research software, not clinically validated, and must not be used for diagnosis.</li>
+    <li><b>Noisy reference standard.</b> PTB-XL labels come from reports; about a third of training labels were not validated by a cardiologist.</li>
+    <li><b>Marginal guarantees.</b> Conformal coverage holds on average under exchangeability, not for every patient, and not under dataset shift.</li>
+    <li><b>Descriptive subgroups.</b> Many subgroups are compared; small groups are flagged and differences are not causal.</li>
+    <li><b>Label harmonisation.</b> External labels are mapped, and the NORM proxy is imperfect; the sensitivity map shows how much this matters.</li>
+    <li><b>Synthetic noise.</b> The real NSTDB noise records were not reachable from the compute environment; synthetic noise is parameterised to mimic them.</li>
+    <li><b>Comparator.</b> The 12SL comparison depends on a statement map and on 12SL's binary output; it is indicative.</li>
+  </ul>
+</div>
+
+<!-- ───────────────────────────── REPRODUCIBILITY ───────────────────────────── -->
+<div class="section">
+  <h2>8 · Reproducibility</h2>
+  <pre>pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e ".[serve,dev]"
+ecgtrust download --dataset ptbxl && ecgtrust download --dataset ptbxl_plus && ecgtrust download --dataset external
+ecgtrust audit
+ecgtrust train --model baseline --features 12sl
+ecgtrust train --model resnet --seeds 0 1 2
+ecgtrust evaluate --split val_select
+ecgtrust freeze                         # hashes checkpoints, config and label maps
+ecgtrust evaluate --split test          # single use, logged
+ecgtrust evaluate --split external      # single use, logged
+ecgtrust guide                          # rebuilds this PDF from reports/</pre>
+  <p>Freeze manifest: <code>not frozen y</code>. Seeds 0, 1, 2. Python 3.13.18, PyTorch 2.15.0.
+    Every unit test runs in CI on synthetic fixtures without network access.</p>
+  <h2 style="margin-top:8mm">9 · References</h2>
+  <ol class="refs">
+    <li>Wagner P, et al. PTB-XL, a large publicly available electrocardiography dataset. <i>Scientific Data</i> 7, 154 (2020). doi:10.1038/s41597-020-0495-6</li>
+    <li>Strodthoff N, et al. Deep learning for ECG analysis: benchmarks and insights from PTB-XL. <i>IEEE J Biomed Health Inform</i> 25(5):1519–1528 (2021). doi:10.1109/JBHI.2020.3022989</li>
+    <li>Strodthoff N, et al. PTB-XL+, a comprehensive electrocardiographic feature dataset. <i>Scientific Data</i> 10, 279 (2023). doi:10.1038/s41597-023-02153-8</li>
+    <li>Zheng J, Guo H, Chu H. A large scale 12-lead electrocardiogram database for arrhythmia study (v1.0.0). PhysioNet (2022). doi:10.13026/wgex-er52</li>
+    <li>Goldberger AL, et al. PhysioBank, PhysioToolkit, and PhysioNet. <i>Circulation</i> 101(23):e215–e220 (2000).</li>
+    <li>Reyna MA, et al. Will two do? Varying dimensions in electrocardiography: the PhysioNet/Computing in Cardiology Challenge 2021. <i>Computing in Cardiology</i> 48 (2021).</li>
+    <li>Guo C, Pleiss G, Sun Y, Weinberger KQ. On calibration of modern neural networks. <i>ICML</i> (2017).</li>
+    <li>Lakshminarayanan B, Pritzel A, Blundell C. Simple and scalable predictive uncertainty estimation using deep ensembles. <i>NeurIPS</i> (2017).</li>
+    <li>Vovk V, Gammerman A, Shafer G. <i>Algorithmic Learning in a Random World</i>. Springer (2005).</li>
+    <li>Angelopoulos AN, Bates S. A gentle introduction to conformal prediction and distribution-free uncertainty quantification. arXiv:2107.07511 (2021).</li>
+    <li>Moody GB, Muldrow WE, Mark RG. A noise stress test for arrhythmia detectors. <i>Computers in Cardiology</i> 11:381–384 (1984).</li>
+    <li>Mitchell M, et al. Model cards for model reporting. <i>FAT*</i> (2019).</li>
+  </ol>
+</div>
+</body>
+</html>

@@ -1,0 +1,64 @@
+statement,superclass,ptbxl_plus_inferred_concept
+NML,NORM,ECG normal
+IMI,MI,Myocardial necrosis
+AMI,MI,Myocardial necrosis
+ASMI,MI,Myocardial necrosis
+ALMI,MI,Myocardial necrosis
+LMI,MI,Old myocardial infarction
+SMI,MI,Septal infarction by electrocardiogram
+IPMI,MI,Myocardial necrosis
+QESPMI,MI,Posterior myocardial infarction on electrocardiogram
+POSTMI,MI,Myocardial necrosis
+STEMI,MI,Acute myocardial infarction
+CRVI,MI,Acute myocardial infarction of inferior wall involving right ventricle
+AIOHAI,MI,Acute myocardial infarction of anterior wall
+LIOHAI,MI,Acute myocardial infarction of lateral wall
+ILIHAI,MI,Acute myocardial infarction of inferolateral wall
+ALIHAI,MI,Acute myocardial infarction of anterolateral wall
+ALINJ,MI,Acute myocardial infarction of inferior wall
+AINJ,MI,Acute myocardial infarction
+IINJ,MI,Acute myocardial infarction of inferior wall involving right ventricle
+ILINJ,MI,Acute myocardial infarction
+LINJ,MI,Acute myocardial infarction
+LVH,HYP,Abnormal finding on evaluation procedure
+LVH2,HYP,Left ventricular hypertrophy by electrocardiogram
+LVH3,HYP,EKG finding
+ROMESTES,HYP,Left ventricular hypertrophy by electrocardiogram
+RVH,HYP,EKG: right ventricle hypertrophy
+BIVH,HYP,EKG: right ventricle hypertrophy
+RVE+,HYP,EKG: right ventricle hypertrophy
+LAE,HYP,Left atrial abnormality
+RAE,HYP,Right atrial enlargement
+BAE,HYP,Bilateral enlargement of atria
+FAV,CD,First degree atrioventricular block
+RBBB,CD,Complete right bundle branch block
+LBBB,CD,ECG complete left bundle branch block
+IRBBB,CD,Incomplete right bundle branch block
+ILBBB,CD,Incomplete left bundle branch block
+AFB,CD,Left anterior fascicular block on electrocardiogram
+PFB,CD,Left posterior fascicular block
+BIFB,CD,Bifascicular block
+IVCB,CD,Non-specific intraventricular conduction delay
+IVCD,CD,Non-specific intraventricular conduction delay
+WPW,CD,Accelerated atrioventricular conduction
+WPWA,CD,Accelerated atrioventricular conduction
+WPWB,CD,Accelerated atrioventricular conduction
+CHB,CD,Complete atrioventricular block
+MBZI,CD,Mobitz type I second degree atrioventricular block on electrocardiogram
+MBZII,CD,EKG: Mobitz type II atrioventricular block
+SAV,CD,Second degree atrioventricular block
+W2T1,CD,ECG: partial atrioventricular block - 2:1
+W3T1,CD,ECG: partial atrioventricular block - 3:1
+NST,STTC,Nonspecific ST-T abnormality on electrocardiogram
+NSTT,STTC,Nonspecific ST-T abnormality on electrocardiogram
+NT,STTC,EKG: T wave abnormal
+LNGQT,STTC,Prolonged QT interval
+LT,STTC,EKG: lateral ischemia
+IT,STTC,EKG: inferior ischemia
+ALT,STTC,EKG: anterior ischemia
+AT,STTC,EKG: anterior ischemia
+ILT,STTC,EKG: inferior ischemia
+MLT,STTC,EKG: lateral ischemia
+MALT,STTC,EKG: anterior ischemia
+MILT,STTC,EKG: inferior ischemia
+MAT,STTC,EKG: anterior ischemia

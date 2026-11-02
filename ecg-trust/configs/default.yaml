@@ -1,0 +1,24 @@
+# Every constant here is fixed by the design spec (docs/specs/2026-11-01-ecg-trust-design.md).
+data_root: data
+artifacts: artifacts
+reports: reports
+mirror: https://physionet-open.s3.amazonaws.com/
+versions:
+  ptbxl: "1.0.3"
+  ptbxl_plus: "1.0.1"
+  external: "1.0.0"
+seeds: [0, 1, 2]
+alphas: [0.05, 0.10]
+n_boot: 2000
+ece_bins: 15
+snr_db: [24, 18, 12, 6, 0, -6]
+age_bands: ["<40", "40-59", "60-79", "80-89", ">89"]
+external_min_pos: 100
+train:
+  width: 64
+  blocks: [2, 2, 2, 2]
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 1.0e-2
+  max_epochs: 30
+  patience: 30
