@@ -1,0 +1,15 @@
+# Colab route: everything lives on Google Drive under ${BMF_DRIVE} (set in the first notebook cell).
+paths:
+  data_root: ${BMF_DATA}
+  clinical: ${BMF_DRIVE}/clinical/UCSD-BMETS-Longitudinal_TCIA_Clinical_Data.tsv
+  mri_meta: ${BMF_DRIVE}/clinical/UCSD-BMETS-Longitudinal_TCIA_MRImetadata.tsv
+  cache: ${BMF_DRIVE}/cache
+  reports: ${BMF_DRIVE}/reports
+  figures: ${BMF_DRIVE}/reports/figures
+lock_dir: ${BMF_DRIVE}/cache/locked
+radiomics_backend: pyradiomics
+preprocess: {n4: true, register_backend: sitk, affine_longitudinal: true}
+train: {epochs: 60, encoder: brainsegfounder}
+fm:
+  weights_dir: ${BMF_DRIVE}/weights
+  weights: {brainsegfounder: brainsegfounder_swinunetr_brats.pt, samed3d: sam_med3d_turbo.pth}
