@@ -1,0 +1,56 @@
+[
+  {
+    "file": "ecg_9.npy",
+    "ecg_id": 9,
+    "title": "NORM (single label)",
+    "labels": [
+      "NORM"
+    ],
+    "fs": 100
+  },
+  {
+    "file": "ecg_63.npy",
+    "ecg_id": 63,
+    "title": "MI (single label)",
+    "labels": [
+      "MI"
+    ],
+    "fs": 100
+  },
+  {
+    "file": "ecg_116.npy",
+    "ecg_id": 116,
+    "title": "STTC (single label)",
+    "labels": [
+      "STTC"
+    ],
+    "fs": 100
+  },
+  {
+    "file": "ecg_65.npy",
+    "ecg_id": 65,
+    "title": "CD (single label)",
+    "labels": [
+      "CD"
+    ],
+    "fs": 100
+  },
+  {
+    "file": "ecg_1219.npy",
+    "ecg_id": 1219,
+    "title": "HYP (single label)",
+    "labels": [
+      "HYP"
+    ],
+    "fs": 100
+  },
+  {
+    "file": "ecg_9.npy",
+    "ecg_id": 9,
+    "title": "noisy recording (static noise annotated)",
+    "labels": [
+      "NORM"
+    ],
+    "fs": 100
+  }
+]

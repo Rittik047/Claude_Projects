@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from ecgtrust.models.train import build_model, predict_logits_array
+from ecgtrust.models.train import build_model, device, predict_logits_array
 
 
 def load_checkpoint(path: Path):
@@ -24,5 +24,6 @@ def predict_logits(checkpoints: list[Path], x: np.ndarray, batch_size: int = 256
     out = []
     for path in checkpoints:
         model, ck = load_checkpoint(path)
+        model.to(device())
         out.append(predict_logits_array(model, x, ck["lead_mean"], ck["lead_std"], batch_size))
     return np.stack(out)

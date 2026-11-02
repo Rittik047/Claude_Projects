@@ -190,10 +190,15 @@
     <div><b>5 · Evaluation</b>Locked one-shot test and external runs, bootstrap CIs, subgroups, noise.</div>
   </div>
   <h3>Models</h3>
-  <p><b>Feature baseline.</b> One histogram gradient-boosting classifier per class on 757 GE 12SL
+  <p><b>Feature baseline.</b> One histogram gradient-boosting classifier per class on 782 GE 12SL
     measurements (intervals, amplitudes, axes), with ECGDeli features as an open-source alternative.
-    <b>Deep model.</b> A 1-D ResNet ({{ arch }}) trained with AdamW, one-cycle learning rate and early stopping
-    on validation macro-AUROC; three seeds are averaged as a deep ensemble (Lakshminarayanan et al., 2017).</p>
+    <b>Deep model.</b> A 1-D ResNet ({{ arch }}) trained with AdamW and a one-cycle learning rate for 30 epochs, keeping the epoch with the best
+    validation macro-AUROC; three seeds are averaged as a deep ensemble (Lakshminarayanan et al., 2017).</p>
+  <p><b>Fusion.</b> The ensemble's probability and the 12SL baseline's probability are combined in logit space,
+    <span class="mono">z = w·logit(p<sub>ResNet</sub>) + (1 − w)·logit(p<sub>12SL</sub>)</span>, with one weight
+    <i>w</i> = 0.4 chosen on val_select from an 11-point grid. It is calibrated and given conformal thresholds on
+    val_calib exactly like the ResNet. Because it needs GE 12SL measurements, it is evaluated on PTB-XL only.</p>
+  {{ fig("fusion_weight", "Fusion weight chosen on validation only: w = 0 is the 12SL feature model, w = 1 the ResNet ensemble.") }}
   <h3>Calibration</h3>
   <p>For each class a single temperature <i>T</i> rescales every member's logit before averaging:
     <span class="mono">p = mean<sub>m</sub> σ(z<sub>m</sub> / T)</span>, with <i>T</i> chosen to minimise
@@ -221,7 +226,9 @@
 <!-- ───────────────────────────── RESULTS ───────────────────────────── -->
 <div class="section">
   <h2>6 · Results</h2>
-  <h3>6.1 Model selection (validation data only)</h3>
+  <h3>6.1 Training and model selection (validation data only)</h3>
+  {{ fig("learning", "Training loss and validation macro-AUROC per epoch for each seed; the dot marks the epoch kept. Validation AUROC peaks around epochs 10–15 while training loss keeps falling, so the best-validation checkpoint matters.") }}
+  {{ fig("val_compare", "Per-class validation AUROC for every candidate model. The fused model is best overall; the ResNet alone trails the 12SL features slightly.") }}
   {{ fig("model_selection", "All modelling choices were made on val_select before the freeze. Points are macro-AUROC; bars are patient-bootstrap 95% CIs.") }}
   <h3>6.2 Internal test (PTB-XL fold 10, single locked run)</h3>
   {% if test %}
@@ -235,6 +242,13 @@
     <div>{{ fig("reliability_post", "Reliability after temperature scaling.") }}</div>
   </div>
   {{ fig("reliability_pre", "Reliability before scaling, for comparison.") }}
+  {{ fig("scores", "Calibrated probability for ECGs with (colour) and without (grey) each label, internal test. Overlap is where errors and referrals happen.") }}
+  {% if fusion %}
+  <h3>6.2b ResNet + 12SL fusion (single locked run)</h3>
+  <p>The fused model reaches macro-AUROC {{ kpi.fusion_auroc }} (95% CI {{ kpi.fusion_ci }}) on the same test ECGs,
+    against {{ kpi.test_auroc }} for the ResNet alone, and is at least as good in every class.</p>
+  {% endif %}
+  {{ fig("forest", "Per-class AUROC with 95% CIs for the three locked evaluations; the dotted line is the published ≈0.93 benchmark.") }}
 </div>
 
 <div class="section">
@@ -245,10 +259,20 @@
     {% for r in conformal_rows %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td></tr>{% endfor %}
   </table>
   {% else %}<div class="pending">Conformal coverage and refer rates appear here after the test run.</div>{% endif %}
+  {{ fig("coverage", "Empirical coverage of true positives vs the 1 − α target, per class. Points on or above the diagonal meet the guarantee; the external panel falls below it for NORM, STTC and CD.") }}
+  {{ fig("decision_mix", "Share of present / refer / absent decisions per class at α = 0.10.") }}
   <h3>6.4 Robustness to noise</h3>
-  {{ fig("robustness", "Macro-AUROC and conformal refer rate as synthetic noise increases (left to right). A trustworthy system should refer more ECGs as quality falls.") }}
-  <h3>6.5 Which leads matter</h3>
-  {{ fig("occlusion", "AUROC drop when a single lead is zeroed. Descriptive only — not a mechanism.") }}
+  {{ fig("noise_panels", "Macro-AUROC, calibration error and refer rate as synthetic noise increases (internal test). At −6 dB electrode motion ECE rises sharply while the refer rate falls: the model becomes confidently wrong rather than abstaining.") }}
+  {{ fig("dropout", "Macro-AUROC when 1, 2 or 4 leads are zeroed at random.") }}
+  <h3>6.5 Explainability: what the model looks at</h3>
+  {{ fig("occlusion_map", "AUROC drop when a single lead is zeroed (internal test). Descriptive only — not a mechanism.") }}
+  {{ fig("lead_ig", "Share of integrated-gradients attribution per lead, averaged over the 40 most confident true positives per class (validation). HYP concentrates on V5, where R-wave voltage criteria are read; CD on V1, where bundle-branch morphology shows.") }}
+  <div class="two">
+    <div>{{ fig("ig_hyp", "Integrated gradients for HYP on one validation ECG: QRS complexes in V5–V6 carry the evidence.") }}</div>
+    <div>{{ fig("ig_mi", "Integrated gradients for MI on one validation ECG: evidence concentrates on QRS complexes in V1 and V5.") }}</div>
+  </div>
+  {{ fig("tsne", "t-SNE of the ensemble's learned representation (validation). Normal ECGs form a separate region; abnormal classes overlap where patients carry several labels.") }}
+  {{ fig("perm", "What the 12SL feature model relies on: permutation importance on validation (AUROC drop), top measurements per class.") }}
 </div>
 
 <div class="section">
@@ -256,12 +280,15 @@
   {{ fig("subgroups", "Descriptive subgroup AUROCs with patient-bootstrap 95% CIs (internal test). Differences are only noted when intervals do not overlap.") }}
   <h3>6.7 Comparison with GE 12SL</h3>
   {{ fig("comparator", "Model sensitivity at 12SL's own specificity on the same test ECGs. Indicative: depends on the published statement map.") }}
+  {{ fig("vs12sl_fusion", "The same comparison for the fused model: every class now gains sensitivity with a CI excluding zero.") }}
   <h3>6.8 External validation</h3>
   {% if ext_metrics %}
   <p>On {{ fmt_int(ext_metrics.n) }} external ECGs the macro-AUROC is {{ kpi.ext_auroc }} (95% CI {{ kpi.ext_ci }}).
     {{ ext_text }}</p>
   {% else %}<div class="pending">External results appear here after the single locked external run.</div>{% endif %}
   {{ fig("internal_vs_external", "Per-class AUROC and calibration error, internal test vs external validation.") }}
+  {{ fig("label_shift", "Label shift between PTB-XL and the external cohort: under the strict map MI is rare (0.7%) and NORM dominates, which makes the external task easier and its AUROC not comparable to the internal one.") }}
+  {{ fig("reliability_ext", "Reliability on the external cohort: temperatures fitted on PTB-XL do not transfer, so probabilities are miscalibrated under shift.") }}
 </div>
 
 <!-- ───────────────────────────── LIMITATIONS ───────────────────────────── -->
@@ -273,6 +300,9 @@
     <li><b>Marginal guarantees.</b> Conformal coverage holds on average under exchangeability, not for every patient, and not under dataset shift.</li>
     <li><b>Descriptive subgroups.</b> Many subgroups are compared; small groups are flagged and differences are not causal.</li>
     <li><b>Label harmonisation.</b> External labels are mapped, and the NORM proxy is imperfect; the sensitivity map shows how much this matters.</li>
+    <li><b>Fusion is PTB-XL only.</b> It needs GE 12SL measurements; the served model and the external evaluation are ResNet-only.</li>
+    <li><b>Shift breaks the guarantees.</b> On the external cohort calibration error roughly triples and positive coverage at α = 0.10 falls to about 0.88 for three classes; local re-calibration is required.</li>
+    <li><b>Severe noise.</b> At −6 dB electrode motion the model is over-confident instead of referring; a signal-quality gate is needed upstream.</li>
     <li><b>Synthetic noise.</b> The real NSTDB noise records were not reachable from the compute environment; synthetic noise is parameterised to mimic them.</li>
     <li><b>Comparator.</b> The 12SL comparison depends on a statement map and on 12SL's binary output; it is indicative.</li>
   </ul>
@@ -284,13 +314,17 @@
   <pre>pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[serve,dev]"
 ecgtrust download --dataset ptbxl && ecgtrust download --dataset ptbxl_plus && ecgtrust download --dataset external
+ecgtrust prepare                        # splits + 100 Hz caches
 ecgtrust audit
 ecgtrust train --model baseline --features 12sl
 ecgtrust train --model resnet --seeds 0 1 2
+ecgtrust train --model fusion
 ecgtrust evaluate --split val_select
 ecgtrust freeze                         # hashes checkpoints, config and label maps
 ecgtrust evaluate --split test          # single use, logged
+ecgtrust evaluate --split test --model fusion
 ecgtrust evaluate --split external      # single use, logged
+ecgtrust results && ecgtrust figures && ecgtrust release
 ecgtrust guide                          # rebuilds this PDF from reports/</pre>
   <p>Freeze manifest: <code>{{ freeze }}</code>. Seeds 0, 1, 2. Python {{ py }}, PyTorch {{ torch }}.
     Every unit test runs in CI on synthetic fixtures without network access.</p>

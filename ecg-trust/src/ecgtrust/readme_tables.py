@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 
 ROWS = (
-    ("test", "Internal test (PTB-XL fold 10)"),
+    ("test", "Internal test (PTB-XL fold 10), ResNet ensemble"),
+    ("test_fusion", "Internal test, ResNet + 12SL fusion"),
     ("external", "External (ecg-arrhythmia, strict map)"),
 )
 

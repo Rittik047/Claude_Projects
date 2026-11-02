@@ -61,3 +61,10 @@ def test_stats_come_from_train_split(tmp_path, tiny_cfg):
         train_model(tiny_cfg, x_tr, y_tr, x_va, y_va, 0, tmp_path, max_epochs=1), weights_only=False
     )
     assert np.allclose(ckpt["lead_mean"], x_tr.mean(axis=(0, 2)), atol=1e-5)
+
+
+def test_device_override(monkeypatch):
+    from ecgtrust.models.train import device
+
+    monkeypatch.setenv("ECGTRUST_DEVICE", "cpu")
+    assert device().type == "cpu"

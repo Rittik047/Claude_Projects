@@ -8,12 +8,14 @@ import importlib
 # Modules that expose `register(subparsers)`; added as tasks land.
 COMMAND_MODULES: list[str] = [
     "ecgtrust.data.download",
+    "ecgtrust.prepare",
     "ecgtrust.audit",
     "ecgtrust.train_cli",
     "ecgtrust.freeze",
     "ecgtrust.evaluate.report",
     "ecgtrust.results",
     "ecgtrust.release",
+    "ecgtrust.figures",
     "ecgtrust.readme_tables",
     "ecgtrust.guide.build",
 ]

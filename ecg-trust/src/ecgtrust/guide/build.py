@@ -49,8 +49,42 @@ DECISIONS = [
         "ambiguous statements unmapped",
         "keeps the commercial comparison conservative",
     ),
-    ("Freeze manifest + single-use test log", "prevents tuning on the test sets"),
+    (
+        "Patience raised to 30 epochs (no early stop); best-validation epoch kept",
+        "with a one-cycle schedule, patience 5 stopped at the learning-rate peak",
+    ),
+    (
+        "Late logit fusion of the ResNet ensemble with the 12SL baseline (w = 0.4 on val_select)",
+        "at the freeze gate the ensemble (0.930) trailed the 12SL features (0.939) on validation",
+    ),
+    ("Freeze manifest + single-use test log per model", "prevents tuning on the test sets"),
 ]
+FIGURES = {  # guide name -> reports/figures path
+    "cooccurrence": "01_data/label_cooccurrence.png",
+    "age": "01_data/age_by_class.png",
+    "measurements": "01_data/12sl_measurements_by_class.png",
+    "amplitude": "01_data/lead_amplitude_by_class.png",
+    "example_mi": "01_data/examples/example_ecg_MI.png",
+    "label_shift": "01_data/external_vs_ptbxl_prevalence.png",
+    "learning": "02_training/learning_curves.png",
+    "fusion_weight": "02_training/fusion_weight_selection.png",
+    "val_compare": "02_training/model_comparison_val.png",
+    "forest": "03_performance/auroc_forest_all_runs.png",
+    "scores": "03_performance/score_distributions_test.png",
+    "reliability_ext": "04_calibration/reliability_external.png",
+    "ece": "04_calibration/ece_per_class.png",
+    "coverage": "05_abstention/coverage_vs_target.png",
+    "decision_mix": "05_abstention/decision_mix.png",
+    "noise_panels": "06_robustness/noise_robustness_panels.png",
+    "dropout": "06_robustness/lead_dropout.png",
+    "occlusion_map": "06_robustness/lead_occlusion_heatmap.png",
+    "ig_hyp": "07_explainability/saliency/integrated_gradients_HYP.png",
+    "ig_mi": "07_explainability/saliency/integrated_gradients_MI.png",
+    "lead_ig": "07_explainability/lead_importance_integrated_gradients.png",
+    "tsne": "07_explainability/embedding_tsne.png",
+    "perm": "07_explainability/12sl_permutation_importance.png",
+    "vs12sl_fusion": "08_comparator/vs_12sl_test_fusion.png",
+}
 
 
 def _load(p: Path) -> dict:
@@ -72,6 +106,7 @@ def _mean(v):
 def collect(cfg: Config) -> dict:
     rep = cfg.reports
     test, ext = _load(rep / "test" / "metrics.json"), _load(rep / "external" / "metrics.json")
+    fusion = _load(rep / "test_fusion" / "metrics.json")
     val = {k: _load(rep / "val" / f"{k}.json") for k in ("baseline_12sl", "baseline_ecgdeli")}
     val = {k: v for k, v in val.items() if v}
     rs = _load(rep / "val" / "resnet_summary.json")
@@ -81,6 +116,7 @@ def collect(cfg: Config) -> dict:
     kpi = {}
     kpi["test_auroc"], kpi["test_ci"] = _fmt_ci(test)
     kpi["ext_auroc"], kpi["ext_ci"] = _fmt_ci(ext)
+    kpi["fusion_auroc"], kpi["fusion_ci"] = _fmt_ci(fusion)
     kpi["ece"] = (
         (
             f"{test['calibration']['macro_ece_pre']:.3f} → "
@@ -92,6 +128,7 @@ def collect(cfg: Config) -> dict:
     kpi["refer"] = f"{_mean(test['conformal']['0.1']['refer_rate']):.0%}" if test else PENDING
     ctx = {
         "test": test,
+        "fusion": fusion,
         "ext_metrics": ext,
         "val": val,
         "summary": summary,
@@ -131,6 +168,8 @@ def collect(cfg: Config) -> dict:
         f"On the locked PTB-XL test fold the 3-seed ResNet ensemble reaches macro-AUROC "
         f"{kpi['test_auroc']} (95% CI {kpi['test_ci']}); temperature scaling moves macro ECE "
         f"{kpi['ece']}; at α = 0.10 about {kpi['refer']} of label decisions are referred. "
+        f"Fusing the ensemble with GE 12SL measurements gives {kpi['fusion_auroc']} "
+        f"(95% CI {kpi['fusion_ci']}). "
         f"On the external database macro-AUROC is {kpi['ext_auroc']} (95% CI {kpi['ext_ci']})."
         if test and ext
         else "Final test and external results are pending the locked evaluation runs."
@@ -142,6 +181,11 @@ def collect(cfg: Config) -> dict:
             "Can it say 'I don't know'?",
             "Label-conditional conformal refer rate, α = 0.10",
             kpi["refer"],
+        ),
+        (
+            "Does adding 12SL measurements help?",
+            "ResNet + 12SL logit fusion, internal test",
+            kpi["fusion_auroc"],
         ),
         ("Does it transfer?", "External database, strict label map", kpi["ext_auroc"]),
         ("Is it robust to noise?", "Synthetic noise at exact SNR; refer rate vs SNR", "see §6.4"),
@@ -183,6 +227,8 @@ def build_guide(cfg: Config, author: str = "Rittik Patra") -> Path:
     }
     for name in ("roc", "reliability_pre", "reliability_post", "robustness", "occlusion"):
         figs[name] = F.copy_if_exists(rep / "test" / f"{name}.png", figdir / f"{name}.png")
+    for name, rel in FIGURES.items():
+        figs[name] = F.copy_if_exists(rep / "figures" / rel, figdir / f"{name}.png")
 
     def fig(name: str, caption: str) -> Markup:
         p = figs.get(name)
