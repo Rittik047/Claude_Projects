@@ -105,7 +105,7 @@ def analysis(cfg, split: str, ctx: dict) -> dict | None:
         thr,
         snr_db=cfg.snr_db,
     )
-    out = cfg.reports / split
+    out = ctx.get("out_dir", cfg.reports / split)
     df.to_csv(out / "robustness.csv", index=False)
     robustness_plot(df, out / "robustness.png")
     return df.to_dict(orient="records")

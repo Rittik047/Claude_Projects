@@ -67,7 +67,7 @@ def analysis(cfg, split: str, ctx: dict) -> dict | None:
         _split_signals(cfg, ctx),
         ctx["y"],
     )
-    out = cfg.reports / split
+    out = ctx.get("out_dir", cfg.reports / split)
     df.to_csv(out / "occlusion.csv", index=False)
     occlusion_heatmap(df, out / "occlusion.png")
     return df.to_dict(orient="records")

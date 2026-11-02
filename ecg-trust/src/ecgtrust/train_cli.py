@@ -69,7 +69,7 @@ def train_baseline(cfg: Config, source: str, seed: int = 0) -> dict:
 
 def register(sub) -> None:
     p = sub.add_parser("train", help="train a model on the train split")
-    p.add_argument("--model", required=True, choices=["baseline", "resnet"])
+    p.add_argument("--model", required=True, choices=["baseline", "resnet", "fusion"])
     p.add_argument("--features", choices=["12sl", "ecgdeli"], default="12sl")
     p.add_argument("--seeds", type=int, nargs="+", default=None)
 
@@ -78,6 +78,11 @@ def register(sub) -> None:
         if args.model == "baseline":
             r = train_baseline(cfg, args.features)
             print(f"baseline[{args.features}] val_select macro-AUROC {r['macro_auroc']}")
+        elif args.model == "fusion":
+            from ecgtrust.models.fusion import build_fusion
+
+            r = build_fusion(cfg)
+            print(f"fusion w={r['w']} val_select macro-AUROC {r['val_select']}")
         else:
             from ecgtrust.models.ensemble import train_resnet_seeds
 

@@ -74,18 +74,26 @@ def require_freeze(cfg: Config, split: str) -> dict:
     return manifest
 
 
-def log_test_run(cfg: Config, split: str, freeze_hash: str, rerun_reason: str | None = None):
+def log_test_run(
+    cfg: Config,
+    split: str,
+    freeze_hash: str,
+    rerun_reason: str | None = None,
+    model: str = "resnet",
+):
     log = cfg.reports / "test_runs.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     previous = (
-        [ln for ln in log.read_text().splitlines() if f"split={split} " in ln]
+        [ln for ln in log.read_text().splitlines() if f"split={split} model={model} " in ln]
         if log.exists()
         else []
     )
     if previous and not rerun_reason:
-        raise TestSetLockedError(f"'{split}' was already evaluated; pass a rerun reason to repeat")
+        raise TestSetLockedError(
+            f"'{split}' was already evaluated with {model}; pass a rerun reason to repeat"
+        )
     stamp = dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
-    line = f"{stamp} split={split} freeze={freeze_hash[:12]}"
+    line = f"{stamp} split={split} model={model} freeze={freeze_hash[:12]}"
     if rerun_reason:
         line += f" RERUN reason={rerun_reason!r}"
     with log.open("a") as f:
@@ -100,6 +108,8 @@ def register(sub) -> None:
         from ecgtrust.models.ensemble import checkpoint_paths
 
         cfg = load_config(args.config)
-        print(write_freeze(cfg, checkpoint_paths(cfg)), freeze_hash(cfg)[:12])
+        fusion = [cfg.artifacts / "models" / f for f in ("baseline_12sl.joblib", "fusion.json")]
+        files = checkpoint_paths(cfg) + [f for f in fusion if f.exists()]
+        print(write_freeze(cfg, files), freeze_hash(cfg)[:12])
 
     p.set_defaults(func=run)

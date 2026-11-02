@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import math
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -65,12 +64,16 @@ def _clean(o):
     return o
 
 
-def fit_calibrators(cfg: Config) -> tuple[np.ndarray, dict]:
-    cal = load_preds(cfg.artifacts / "preds" / "resnet_val_calib.npz")
+SIGNAL_ANALYSES = ("robustness", "occlusion")  # re-predict from raw signal: ResNet only
+
+
+def fit_calibrators(cfg: Config, model: str = "resnet") -> tuple[np.ndarray, dict]:
+    cal = load_preds(cfg.artifacts / "preds" / f"{model}_val_calib.npz")
     temps = fit_temperature(cal["logits"], cal["y"])
     p_cal = ensemble_proba(cal["logits"], temps)
     thr = {str(a): fit_conformal(p_cal, cal["y"], a) for a in cfg.alphas}
     out = cfg.artifacts / "calibration"
+    out = out if model == "resnet" else out / model
     out.mkdir(parents=True, exist_ok=True)
     np.save(out / "T.npy", temps)
     for a, t in thr.items():
@@ -78,16 +81,16 @@ def fit_calibrators(cfg: Config) -> tuple[np.ndarray, dict]:
     return temps, thr
 
 
-def _split_inputs(cfg: Config, split: str, rerun_reason: str | None):
+def _split_inputs(cfg: Config, split: str, rerun_reason: str | None, model: str = "resnet"):
     """Return (logits, y, groups, meta_rows, extra) for the split."""
     from ecgtrust import predict
     from ecgtrust.train_cli import load_labelled
 
     if split in ("val_select", "val_calib"):
-        d = load_preds(cfg.artifacts / "preds" / f"resnet_{split}.npz")
+        d = load_preds(cfg.artifacts / "preds" / f"{model}_{split}.npz")
         meta, _, _ = load_labelled(cfg)
         return d["logits"], d["y"], d["patient_id"], meta.loc[d["ecg_id"]], {}
-    log_test_run(cfg, split, freeze_hash(cfg), rerun_reason)
+    log_test_run(cfg, split, freeze_hash(cfg), rerun_reason, model=model)
     ckpts = checkpoint_paths(cfg)
     if split == "test":
         meta, y, splits = load_labelled(cfg)
@@ -102,6 +105,10 @@ def _split_inputs(cfg: Config, split: str, rerun_reason: str | None):
             meta.index.to_numpy()[r],
             meta.patient_id.to_numpy()[r],
         )
+        if model == "fusion":
+            from ecgtrust.models.fusion import fused_test_logits
+
+            lg = fused_test_logits(cfg, lg, meta.index.to_numpy()[r])
         return lg, yv, meta.patient_id.to_numpy()[r], meta.iloc[r], {}
     em = pd.read_parquet(cfg.artifacts / "external_meta.parquet")
     em = em[em.excluded_reason == ""]
@@ -177,14 +184,17 @@ def _calibration(y, p_pre, p_post, bins) -> dict:
 def evaluate_split(
     cfg: Config, split: str, model: str = "resnet", rerun_reason: str | None = None
 ) -> dict:
+    if model == "fusion" and split == "external":
+        raise ValueError("fusion needs GE 12SL measurements, which the external set lacks")
     manifest = require_freeze(cfg, split)
-    temps, thr = fit_calibrators(cfg)
-    logits, y, groups, meta_rows, extra = _split_inputs(cfg, split, rerun_reason)
+    temps, thr = fit_calibrators(cfg, model)
+    logits, y, groups, meta_rows, extra = _split_inputs(cfg, split, rerun_reason, model)
     p_pre, p_post = ensemble_proba(logits), ensemble_proba(logits, temps)
-    out_dir = cfg.reports / split
+    out_dir = cfg.reports / (split if model == "resnet" else f"{split}_{model}")
     out_dir.mkdir(parents=True, exist_ok=True)
     res = {
         "split": split,
+        "model": model,
         "n": int(len(y)),
         "temperature": temps.tolist(),
         "freeze": manifest.get("git_commit"),
@@ -223,11 +233,17 @@ def evaluate_split(
         "thr": thr,
         "meta": meta_rows,
         "groups": groups,
+        "out_dir": out_dir,
         "decisions": decide(p_post, thr[str(max(cfg.alphas))]),
     }
     have_ckpts = all(p.exists() for p in checkpoint_paths(cfg))
     for name, fn in extra_analyses():
-        res[name] = fn(cfg, split, ctx) if have_ckpts else {"skipped": "no checkpoints"}
+        if model != "resnet" and name in SIGNAL_ANALYSES:
+            res[name] = {"skipped": "signal-level analysis is ResNet-only"}
+        elif not have_ckpts:
+            res[name] = {"skipped": "no checkpoints"}
+        else:
+            res[name] = fn(cfg, split, ctx)
     aucs = [r["auroc"] for r in res["discrimination"]["per_class"]]
     plots.roc_plot(y, p_post, aucs, out_dir / "roc.png", f"ROC — {split}")
     plots.reliability_plot(
@@ -255,7 +271,7 @@ def render_summary(r: dict) -> str:
     d, c = r["discrimination"], r["calibration"]
     m = d["macro_auroc"]
     lines = [
-        f"# Evaluation — {r['split']} (n = {r['n']})",
+        f"# Evaluation — {r['split']}, {r.get('model', 'resnet')} (n = {r['n']})",
         "",
         f"Macro-AUROC **{m['point']:.3f}** [95% CI {m['lo']:.3f}, {m['hi']:.3f}] "
         "(patient-level bootstrap).",
@@ -297,16 +313,15 @@ def render_summary(r: dict) -> str:
 def register(sub) -> None:
     p = sub.add_parser("evaluate", help="evaluate a split (test/external require a freeze)")
     p.add_argument("--split", required=True, choices=["val_select", "test", "external"])
+    p.add_argument("--model", choices=["resnet", "fusion"], default="resnet")
     p.add_argument("--rerun-reason", default=None)
 
     def run(args):
         from ecgtrust.config import load_config
 
-        r = evaluate_split(load_config(args.config), args.split, rerun_reason=args.rerun_reason)
-        print(
-            Path(load_config(args.config).reports / args.split / "summary.md").read_text()
-            if r
-            else ""
-        )
+        cfg = load_config(args.config)
+        evaluate_split(cfg, args.split, model=args.model, rerun_reason=args.rerun_reason)
+        name = args.split if args.model == "resnet" else f"{args.split}_{args.model}"
+        print((cfg.reports / name / "summary.md").read_text())
 
     p.set_defaults(func=run)

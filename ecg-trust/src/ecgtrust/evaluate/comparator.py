@@ -93,7 +93,7 @@ def analysis(cfg, split: str, ctx: dict) -> dict | None:
     t = comparator_table(ctx["y"], ctx["p"], d, ctx["groups"], n_boot=cfg.n_boot)
     mapped = set(_load_map(MAP_PATH))
     unmapped = Counter(s for st in _statements(root).reindex(ids) for s in st if s not in mapped)
-    out = cfg.reports / split
+    out = ctx.get("out_dir", cfg.reports / split)
     t.to_csv(out / "comparator.csv", index=False)
     lines = [
         f"# GE 12SL comparator — {split}",
