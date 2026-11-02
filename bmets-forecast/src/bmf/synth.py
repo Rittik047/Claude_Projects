@@ -76,7 +76,7 @@ def make_synthetic_cohort(root: Path | str, n_patients: int = 6, shape=(48, 48, 
         tracks = {j: [sites[j], [float(rng.integers(3, 6))] + [0.0] * (n_post - 1)] for j in range(k_init)}
         for j, (c, rs) in tracks.items():
             for t in range(1, n_post):
-                rs[t] = max(0.0, rs[t - 1] + float(rng.choice([-1, 0, 1, 2])))
+                rs[t] = min(6.0, max(0.0, rs[t - 1] + float(rng.choice([-1, 0, 1, 2]))))
         if i == 0:                                                # guaranteed new lesion at post 2
             tracks[5] = [sites[5], [0.0, 3.0] + [4.0] * (n_post - 2)]
         if i == 1:                                                # guaranteed complete response at post 3
